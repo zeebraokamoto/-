@@ -262,7 +262,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 .modal-actions button.danger{background:#fff0ed;color:#a64232}
 .modal-actions .push{margin-right:auto}
 
-/* Recipe Editor with Dropdown & Custom Amount/Unit Rows */
+/* Recipe Editor with Prefix, Name, Amount & Unit Rows */
 .edit-field{margin-bottom:14px}
 .edit-field label.field-label{display:block;font-size:13px;font-weight:700;color:#1b472b;margin-bottom:6px}
 .edit-field input,.edit-field select,.edit-field textarea{
@@ -274,13 +274,14 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
 .ing-row-list{display:flex;flex-direction:column;gap:8px}
 .ing-row{
-  display:grid;grid-template-columns:minmax(120px,1.5fr) minmax(96px,1fr) minmax(104px,1fr) auto;
+  display:grid;grid-template-columns:72px minmax(120px,1.4fr) minmax(92px,.95fr) minmax(98px,1fr) auto;
   gap:6px;align-items:start;background:#f4f7f2;padding:8px;border-radius:10px;border:1px solid #dfe5da;
 }
 .ing-cell{display:flex;flex-direction:column;gap:4px}
 .ing-row input,.ing-row select{
   width:100%;padding:8px;border-radius:8px;border:1px solid #cfd6c9;font:inherit;font-size:13px;background:#fff;
 }
+.ing-prefix-input{text-align:center;font-weight:700;color:#1b472b}
 .ing-custom-input{
   border-color:#7f9887!important;background:#fbfdfb!important;
 }
@@ -319,9 +320,13 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
 .footer{margin:28px 0 0;color:#7e8c82;font-size:12px;text-align:center}
 
-@media(max-width:560px){
-  .ing-row{grid-template-columns:1fr 1fr;}
-  .ing-row input.ing-name-input{grid-column:1 / -1;}
+@media(max-width:620px){
+  .ing-row{grid-template-columns:72px 1fr auto;}
+  .ing-row .ing-prefix-cell{grid-column:1 / 2;}
+  .ing-row .ing-name-cell{grid-column:2 / -1;}
+  .ing-row .del-row-btn{grid-column:3 / 4;grid-row:1 / 2;}
+  .ing-row .ing-amt-cell{grid-column:1 / 3;}
+  .ing-row .ing-unit-cell{grid-column:3 / -1;}
 }
 @media(max-width:480px){
   .wrap{padding:14px 16px 48px}
@@ -509,8 +514,8 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 <script>
 (function () {
   const REQUIRED_PIN = "1203";
-  const STORAGE_KEY = "uchino_recipe_state_v6";
-  const UNLOCK_KEY = "uchino_recipe_unlocked_v6";
+  const STORAGE_KEY = "uchino_recipe_state_v7";
+  const UNLOCK_KEY = "uchino_recipe_unlocked_v7";
   const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
   const CUSTOM_OPTION = "__custom__";
 
@@ -550,24 +555,49 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
   const initialData = Array.isArray(embeddedPayload.recipes) ? embeddedPayload.recipes : [];
 
-  function normalizeIngredientName(rawName) {
+  // Separate leading markers/group labels like "〇", "◎", "A", "B", "A:", "（A）" from ingredient names
+  function splitPrefixAndName(rawName) {
     let s = String(rawName || "").trim();
     s = s.replace(/[（(][^）)]*[）)]/g, "").trim();
-    s = s.replace(/^[〇○●・\s]+/, "").trim();
-    if (/にんにく/.test(s)) return "にんにく";
-    if (/しょうが|生姜/.test(s)) return "しょうが";
-    if (/にんじん|人参/.test(s)) return "にんじん";
-    if (/ねぎ|ネギ|長ねぎ/.test(s)) return "長ねぎ";
-    if (/きゅうり|キュウリ/.test(s)) return "きゅうり";
-    if (/玉ねぎ|玉葱|たまねぎ/.test(s)) return "玉ねぎ";
-    if (/鶏もも肉|鶏もも/.test(s)) return "鶏もも肉";
-    if (/鶏むね肉|鶏むね/.test(s)) return "鶏むね肉";
-    if (/鶏ももひき肉|鶏ひき肉|とりひき肉/.test(s)) return "鶏ひき肉";
-    return s;
+
+    let prefix = "";
+    const symbolMatch = s.match(/^([〇○◎●・]+)\s*(.+)$/);
+    if (symbolMatch) {
+      prefix = symbolMatch[1].trim();
+      s = symbolMatch[2].trim();
+    } else {
+      const alphaMatch = s.match(/^[（(]?([A-Za-zＡ-Ｚａ-ｚ0-9０-９]{1,2})[）)]?\s*(?:[:：、,．.／/・\-－]+|\s+)\s*(.+)$/);
+      if (alphaMatch) {
+        prefix = alphaMatch[1].trim();
+        s = alphaMatch[2].trim();
+      }
+    }
+
+    if (/にんにく/.test(s)) s = "にんにく";
+    else if (/しょうが|生姜/.test(s)) s = "しょうが";
+    else if (/にんじん|人参/.test(s)) s = "にんじん";
+    else if (/ねぎ|ネギ|長ねぎ/.test(s)) s = "長ねぎ";
+    else if (/きゅうり|キュウリ/.test(s)) s = "きゅうり";
+    else if (/玉ねぎ|玉葱|たまねぎ/.test(s)) s = "玉ねぎ";
+    else if (/鶏もも肉|鶏もも/.test(s)) s = "鶏もも肉";
+    else if (/鶏むね肉|鶏むね/.test(s)) s = "鶏むね肉";
+    else if (/鶏ももひき肉|鶏ひき肉|とりひき肉/.test(s)) s = "鶏ひき肉";
+
+    return { prefix, name: s };
+  }
+
+  function normalizeIngredientName(rawName) {
+    return splitPrefixAndName(rawName).name;
   }
 
   function classifyShoppingCategory(name) {
-    const s = String(name || "").toLowerCase();
+    const clean = normalizeIngredientName(name);
+    const s = String(clean || "").toLowerCase();
+
+    // Seasoning / soup stocks / dashi should go to "その他" (must come before "肉")
+    if (/鶏がらスープ|鶏ガラスープ|鶏ガラ|がらスープ|スープの素|コンソメ|だしの素|中華だし|和風だし|白だし|めんつゆ|つゆ|ポン酢|ぽん酢|みりん|料理酒|酒|醤油|しょうゆ|醬油|味噌|みそ|塩|こしょう|コショウ|胡椒|砂糖|酢|マヨネーズ|ケチャップ|ソース|油|ごま油|サラダ油|オリーブオイル|片栗粉|小麦粉|カレー粉|スパイス|香辛料|だし/.test(s)) {
+      return "その他";
+    }
 
     if (/りんご|バナナ|みかん|オレンジ|いちご|苺|ぶどう|葡萄|桃|もも|なし|梨|レモン|キウイ|すいか|スイカ|メロン|ブルーベリー|果実|フルーツ/.test(s)) {
       return "果実";
@@ -631,48 +661,52 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
     const unitFirstMatch = raw.match(/^(.*?)\s+(大さじ|小さじ)\s*:?\s*([0-9]+(?:\.[0-9]+)?|1\/2|1\/3|1\/4|1\/8|1と1\/2|適量|少々)$/);
     if (unitFirstMatch) {
-      const cleanName = normalizeIngredientName(unitFirstMatch[1]);
+      const { prefix, name } = splitPrefixAndName(unitFirstMatch[1]);
       const unitVal = unitFirstMatch[2];
       const amountVal = unitFirstMatch[3];
       return {
-        name: cleanName,
+        prefix,
+        name,
         amountVal,
         unitVal,
-        category: classifyShoppingCategory(cleanName)
+        category: classifyShoppingCategory(name)
       };
     }
 
     const numUnitMatch = raw.match(/^(.*?)[ \s]+(?:約)?([0-9]+(?:\.[0-9]+)?|[0-9]+\/[0-9]+|1と1\/2|適量|少々)(大さじ|小さじ|個|枚|本|尾|缶|株|束|袋|パック|切れ|かけ|cm|g|ml|カップ|適量|[^\s0-9/]+)?$/);
     if (numUnitMatch) {
-      const cleanName = normalizeIngredientName(numUnitMatch[1]);
+      const { prefix, name } = splitPrefixAndName(numUnitMatch[1]);
       const amountVal = numUnitMatch[2] || "";
       const unitVal = numUnitMatch[3] || "";
       return {
-        name: cleanName,
+        prefix,
+        name,
         amountVal,
         unitVal,
-        category: classifyShoppingCategory(cleanName)
+        category: classifyShoppingCategory(name)
       };
     }
 
     const parts = raw.split(/[\u3000\s]+/);
     if (parts.length >= 2) {
       const last = parts.pop();
-      const cleanName = normalizeIngredientName(parts.join(" "));
+      const { prefix, name } = splitPrefixAndName(parts.join(" "));
       return {
-        name: cleanName,
+        prefix,
+        name,
         amountVal: last,
         unitVal: "",
-        category: classifyShoppingCategory(cleanName)
+        category: classifyShoppingCategory(name)
       };
     }
 
-    const cleanName = normalizeIngredientName(raw);
+    const { prefix, name } = splitPrefixAndName(raw);
     return {
-      name: cleanName,
+      prefix,
+      name,
       amountVal: "",
       unitVal: "",
-      category: classifyShoppingCategory(cleanName)
+      category: classifyShoppingCategory(name)
     };
   }
 
@@ -684,6 +718,24 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       return amt ? `${unit}${amt}` : unit;
     }
     return `${amt}${unit}`;
+  }
+
+  function formatRecipeLineForView(line) {
+    const parsed = parseStructuredLine(line);
+    if (!parsed) return line;
+    const prefixPart = parsed.prefix ? `[${parsed.prefix}] ` : "";
+    const dispAmt = formatIngredientDisplay(parsed);
+    return `${prefixPart}${parsed.name}${dispAmt ? ` ${dispAmt}` : ""}`;
+  }
+
+  function formatRecipeBlockForView(blockText) {
+    if (!blockText) return "";
+    return String(blockText)
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean)
+      .map(formatRecipeLineForView)
+      .join("\n");
   }
 
   function getDefaultMonthKey() {
@@ -730,11 +782,11 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     const tokens = [];
     const keywords = ["鶏もも", "鶏むね", "豚", "牛", "ひき肉", "鮭", "さば", "えび", "卵", "豆腐", "厚揚げ", "玉ねぎ", "大根", "にんじん", "キャベツ", "白菜", "きゅうり", "ねぎ", "じゃがいも", "きのこ", "しめじ", "えのき"];
     lines.forEach((line) => {
-      const head = line.split(/[\u3000\s]+/)[0] || line;
+      const cleanHead = normalizeIngredientName(line.split(/[\u3000\s]+/)[0] || line);
       keywords.forEach((kw) => {
-        if (head.includes(kw) || line.includes(kw)) tokens.push(kw);
+        if (cleanHead.includes(kw) || line.includes(kw)) tokens.push(kw);
       });
-      tokens.push(head.slice(0, 4));
+      if (cleanHead) tokens.push(cleanHead.slice(0, 4));
     });
     return tokens;
   }
@@ -830,12 +882,11 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
   function loadState() {
     try {
       const embeddedUpdatedAt = Number(embeddedPayload.updatedAt || 0);
-      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("uchino_recipe_state_v5") || localStorage.getItem("uchino_recipe_state_v4");
+      const saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("uchino_recipe_state_v6") || localStorage.getItem("uchino_recipe_state_v5");
       if (!saved) return;
       const parsed = JSON.parse(saved);
       const savedUpdatedAt = Number(parsed.updatedAt || 0);
 
-      // If embedded HTML is newer than localStorage (e.g. partner updated HTML via GitHub), prefer embedded HTML data
       if (embeddedUpdatedAt > savedUpdatedAt && Array.isArray(embeddedPayload.recipes) && embeddedPayload.recipes.length > 0) {
         return;
       }
@@ -1052,10 +1103,16 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     if (recipe.minutes) tags.push(`<span class="tag">目安 ${escapeHtml(recipe.minutes)}分</span>`);
     if (recipe.servings) tags.push(`<span class="tag">${escapeHtml(recipe.servings)}人分</span>`);
 
+    const formattedIngredients = formatRecipeBlockForView(recipe.ingredients);
+    const formattedSeasonings = recipe.seasonings ? `【調味料】\n${formatRecipeBlockForView(recipe.seasonings)}` : "";
+    const formattedSauce = (recipe.includeSauceIngredients && recipe.sauceIngredients)
+      ? `【たれ・ソース】\n${formatRecipeBlockForView(recipe.sauceIngredients)}`
+      : "";
+
     const allIngredients = [
-      recipe.ingredients,
-      recipe.seasonings ? `【調味料】\n${recipe.seasonings}` : "",
-      recipe.includeSauceIngredients && recipe.sauceIngredients ? `【たれ・ソース】\n${recipe.sauceIngredients}` : ""
+      formattedIngredients,
+      formattedSeasonings,
+      formattedSauce
     ].filter(Boolean).join("\n\n");
 
     container.innerHTML = `
@@ -1483,7 +1540,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
     let rows = rawRows.length > 0
       ? rawRows
-      : [{ name: "", amountVal: "1", unitVal: "個", category: "その他" }];
+      : [{ prefix: "", name: "", amountVal: "1", unitVal: "個", category: "その他" }];
 
     const buildAmountCell = (val) => {
       const isCustom = Boolean(val) && !AMOUNT_OPTIONS.includes(val);
@@ -1492,7 +1549,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       );
       opts.push(`<option value="${CUSTOM_OPTION}" ${isCustom ? "selected" : ""}>その他（自由入力）</option>`);
       return `
-        <div class="ing-cell">
+        <div class="ing-cell ing-amt-cell">
           <select class="ing-amt-select">${opts.join("")}</select>
           <input type="text" class="ing-amt-custom ing-custom-input ${isCustom ? "" : "hidden"}" placeholder="例: 2/3, 半分" value="${isCustom ? escapeHtml(val) : ""}">
         </div>
@@ -1506,7 +1563,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       );
       opts.push(`<option value="${CUSTOM_OPTION}" ${isCustom ? "selected" : ""}>その他（自由入力）</option>`);
       return `
-        <div class="ing-cell">
+        <div class="ing-cell ing-unit-cell">
           <select class="ing-unit-select">${opts.join("")}</select>
           <input type="text" class="ing-unit-custom ing-custom-input ${isCustom ? "" : "hidden"}" placeholder="例: 丁, 房, 片" value="${isCustom ? escapeHtml(val) : ""}">
         </div>
@@ -1516,7 +1573,12 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     function renderRowsHtml() {
       return rows.map((r, idx) => `
         <div class="ing-row" data-row-idx="${idx}">
-          <input type="text" class="ing-name-input" placeholder="材料・調味料名（例：えび）" value="${escapeHtml(r.name)}">
+          <div class="ing-cell ing-prefix-cell">
+            <input type="text" class="ing-prefix-input" list="prefixSuggestions" placeholder="記号・A" value="${escapeHtml(r.prefix || "")}" aria-label="記号やグループ">
+          </div>
+          <div class="ing-cell ing-name-cell">
+            <input type="text" class="ing-name-input" placeholder="材料・調味料名（例：鶏がらスープの素）" value="${escapeHtml(r.name)}">
+          </div>
           ${buildAmountCell(r.amountVal)}
           ${buildUnitCell(r.unitVal)}
           <button type="button" class="del-row-btn" data-del-idx="${idx}">削除</button>
@@ -1527,7 +1589,12 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     function syncRowsFromDom() {
       const next = [];
       modalRoot.querySelectorAll(".ing-row").forEach((el) => {
-        const name = el.querySelector(".ing-name-input")?.value.trim() || "";
+        const prefixRaw = el.querySelector(".ing-prefix-input")?.value.trim() || "";
+        const nameRaw = el.querySelector(".ing-name-input")?.value.trim() || "";
+        const splitFromName = splitPrefixAndName(nameRaw);
+        const prefix = splitPrefixAndName(prefixRaw).prefix || prefixRaw || splitFromName.prefix;
+        const name = splitFromName.name;
+
         const amtSel = el.querySelector(".ing-amt-select")?.value || "";
         const amtCustom = el.querySelector(".ing-amt-custom")?.value.trim() || "";
         const amountVal = amtSel === CUSTOM_OPTION ? amtCustom : amtSel;
@@ -1537,6 +1604,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
         const unitVal = unitSel === CUSTOM_OPTION ? unitCustom : unitSel;
 
         next.push({
+          prefix,
           name,
           amountVal,
           unitVal,
@@ -1580,7 +1648,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
           const idx = Number(btn.dataset.delIdx);
           rows.splice(idx, 1);
           if (rows.length === 0) {
-            rows.push({ name: "", amountVal: "", unitVal: "", category: "その他" });
+            rows.push({ prefix: "", name: "", amountVal: "", unitVal: "", category: "その他" });
           }
           redrawIngredientList();
         });
@@ -1591,6 +1659,13 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       <div class="overlay" id="editOverlay">
         <div class="modal" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
           <h2 id="editModalTitle">${isEdit ? "レシピを編集" : "新しいレシピを追加"}</h2>
+          <datalist id="prefixSuggestions">
+            <option value="〇">
+            <option value="◎">
+            <option value="A">
+            <option value="B">
+            <option value="C">
+          </datalist>
           <form id="recipeForm">
             <div class="edit-field">
               <label class="field-label" for="fName">料理名 *</label>
@@ -1612,7 +1687,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
             </div>
 
             <div class="edit-field">
-              <label class="field-label">材料・調味料（プルダウン選択／「その他」で自由入力も可能）</label>
+              <label class="field-label">材料・調味料（左端に〇・◎・A・Bなどを分けると買い物リストでまとまります）</label>
               <div id="ingRowsContainer" class="ing-row-list">
                 ${renderRowsHtml()}
               </div>
@@ -1644,7 +1719,7 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
 
     document.getElementById("addIngRowBtn")?.addEventListener("click", () => {
       syncRowsFromDom();
-      rows.push({ name: "", amountVal: "1", unitVal: "", category: "その他" });
+      rows.push({ prefix: "", name: "", amountVal: "1", unitVal: "", category: "その他" });
       redrawIngredientList();
     });
 
@@ -1674,7 +1749,8 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
         .filter((r) => r.name)
         .map((r) => {
           const disp = formatIngredientDisplay(r);
-          return disp ? `${r.name} ${disp}` : r.name;
+          const labelName = r.prefix ? `${r.prefix} ${r.name}` : r.name;
+          return disp ? `${labelName} ${disp}` : labelName;
         });
 
       const updated = {
@@ -1708,7 +1784,6 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     try {
       const clone = document.documentElement.cloneNode(true);
 
-      // Reset runtime UI states in exported HTML so it opens cleanly on PIN lock screen
       const pinEl = clone.querySelector("#pinLockScreen");
       const appEl = clone.querySelector("#appShell");
       if (pinEl) pinEl.classList.remove("hidden");
