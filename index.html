@@ -573,10 +573,11 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       }
     }
 
-    if (/にんにく/.test(s)) s = "にんにく";
+    // 明確な表記ゆれのみ統一（小ねぎ・万能ねぎ・青ねぎなどは別扱いとして残す）
+    if (/にんにく|ニンニク/.test(s)) s = "にんにく";
     else if (/しょうが|生姜/.test(s)) s = "しょうが";
     else if (/にんじん|人参/.test(s)) s = "にんじん";
-    else if (/ねぎ|ネギ|長ねぎ/.test(s)) s = "長ねぎ";
+    else if (/^(?:長ねぎ|白ねぎ|根深ねぎ|長ネギ|白ネギ)$/.test(s)) s = "長ねぎ";
     else if (/きゅうり|キュウリ/.test(s)) s = "きゅうり";
     else if (/玉ねぎ|玉葱|たまねぎ/.test(s)) s = "玉ねぎ";
     else if (/鶏もも肉|鶏もも/.test(s)) s = "鶏もも肉";
@@ -659,8 +660,9 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
     const raw = String(line || "").trim();
     if (!raw) return null;
 
-    const unitFirstMatch = raw.match(/^(.*?)\s+(大さじ|小さじ)\s*:?\s*([0-9]+(?:\.[0-9]+)?|1\/2|1\/3|1\/4|1\/8|1と1\/2|適量|少々)$/);
-    if (unitFirstMatch) {
+    // 「砂糖 大さじ1」または「砂糖大さじ1」
+    const unitFirstMatch = raw.match(/^(.*?)\s*(大さじ|小さじ)\s*:?\s*([0-9]+(?:\.[0-9]+)?|1\/2|1\/3|1\/4|1\/8|1と1\/2|適量|少々)$/);
+    if (unitFirstMatch && unitFirstMatch[1].trim()) {
       const { prefix, name } = splitPrefixAndName(unitFirstMatch[1]);
       const unitVal = unitFirstMatch[2];
       const amountVal = unitFirstMatch[3];
@@ -673,11 +675,13 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       };
     }
 
-    const numUnitMatch = raw.match(/^(.*?)[ \s]+(?:約)?([0-9]+(?:\.[0-9]+)?|[0-9]+\/[0-9]+|1と1\/2|適量|少々)(大さじ|小さじ|個|枚|本|尾|缶|株|束|袋|パック|切れ|かけ|cm|g|ml|カップ|適量|[^\s0-9/]+)?$/);
-    if (numUnitMatch) {
+    // 「鶏もも肉 500g」または「鶏もも肉500g」または「玉ねぎ 1/2個」
+    const numUnitMatch = raw.match(/^(.*?)\s*(?:約)?([0-9]+(?:\.[0-9]+)?|[0-9]+\/[0-9]+|1と1\/2|適量|少々)\s*(大さじ|小さじ|個|枚|本|尾|缶|株|束|袋|パック|切れ|かけ|cm|g|ｇ|ml|カップ|適量|[^\s0-9/]+)?$/i);
+    if (numUnitMatch && numUnitMatch[1].trim()) {
       const { prefix, name } = splitPrefixAndName(numUnitMatch[1]);
       const amountVal = numUnitMatch[2] || "";
-      const unitVal = numUnitMatch[3] || "";
+      const rawUnit = numUnitMatch[3] || "";
+      const unitVal = rawUnit === "ｇ" ? "g" : rawUnit;
       return {
         prefix,
         name,
@@ -1524,6 +1528,8 @@ body{margin:0;background:#f5f6ee;color:#1d2b22}
       servings: "2",
       ingredients: "",
       seasonings: "",
+      sauceIngredients: "",
+      includeSauceIngredients: true,
       method: "",
       memo: "",
       image: ""
