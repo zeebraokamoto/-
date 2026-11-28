@@ -542,12 +542,13 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v7';
+    const DEFAULT_GAS_URL = 'https://script.google.com/macros/s/AKfycbwx07cFQa5TuPQCnwNv4DkVWLzJgGHLwig3RANQY809eIoF4VK12aqnBLizzlarPOQ/exec';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
+    const STORAGE_KEY = 'uchino_recipe_app_state';
+
     const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
 
-    // 買い物リストの区分順（その他＝梅干し・板こんにゃく等、調味料＝醤油・水・バター等）
     const SHOP_KINDS = [
       '果物',
       '野菜',
@@ -562,7 +563,6 @@
       '調味料'
     ];
 
-    // 数量ドロップダウン
     const AMOUNT_OPTIONS = [
       '', '1/8', '1/6', '1/4', '1/3', '1/2', '2/3', '3/4',
       '1', '1.5', '2', '2.5', '3', '4', '5', '6', '8', '10',
@@ -571,7 +571,6 @@
       '適量', '少々', 'カスタム'
     ];
 
-    // 単位ドロップダウン
     const UNIT_OPTIONS = [
       '', 'g', 'mg', 'kg', 'ml', 'cc', 'L', '大さじ', '小さじ',
       '個', '枚', '玉', '本', '片', '株', '束', '缶',
@@ -579,7 +578,7 @@
     ];
 
     const SEED_DATA = {
-      gasUrl: '',
+      gasUrl: DEFAULT_GAS_URL,
       shareKey: DEFAULT_SHARE_KEY,
       updatedAt: '',
       recipes: [
@@ -652,7 +651,6 @@
     let currentDetailId = null;
     let isSavingCloud = false;
 
-    // null / undefined / "null" / "undefined" を安全な空文字に正規化
     function cleanStr(val) {
       if (val === null || val === undefined) return '';
       const s = String(val).trim();
@@ -664,10 +662,8 @@
       const n = cleanStr(name);
       const rk = cleanStr(rawKind);
 
-      // 豆腐・納豆・厚揚げ・油揚げ・がんもは先に判定（「油揚げ」が「油」で調味料に行かないようにする）
       if (/豆腐|納豆|厚揚げ|油揚げ|がんも/.test(n)) return '豆腐や納豆';
 
-      // 調味料判定（既存の「その他」からも調味料を救済できるよう、rk が「その他」や未指定のときは自動判定を優先）
       if (/醤油|しょうゆ|みりん|酒|味噌|みそ|塩|砂糖|酢|油|オイル|だし|出汁|スープの素|コンソメ|めんつゆ|つゆ|マヨネーズ|ケチャップ|ソース|わさび|からし|マスタード|こしょう|コショウ|胡椒|水|湯|バター|片栗粉|小麦粉|薄力粉|強力粉|パン粉|塩こうじ|塩麹|おろしにんにく|おろししょうが|チューブ|塩昆布|白だし|ポン酢|ごま|いりごま|すりごま/.test(n)) {
         return '調味料';
       }
@@ -719,8 +715,9 @@
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return structuredClone(SEED_DATA);
         const parsed = JSON.parse(raw);
+        const savedUrl = cleanStr(parsed.gasUrl);
         return {
-          gasUrl: cleanStr(parsed.gasUrl),
+          gasUrl: savedUrl || DEFAULT_GAS_URL,
           shareKey: cleanStr(parsed.shareKey) || DEFAULT_SHARE_KEY,
           updatedAt: cleanStr(parsed.updatedAt),
           recipes: Array.isArray(parsed.recipes) && parsed.recipes.length > 0
@@ -772,7 +769,6 @@
       });
     }
 
-    // 最大公約数（約分用）
     function gcd(a, b) {
       let x = Math.abs(Math.round(a));
       let y = Math.abs(Math.round(b));
@@ -784,7 +780,6 @@
       return x || 1;
     }
 
-    // 料理でよく使う分数にスナップし、丸め誤差（4999/10000 や 5/10 など）を防ぐ
     const COMMON_FRACTIONS = [
       { num: 1, den: 8, val: 1 / 8 },
       { num: 1, den: 6, val: 1 / 6 },
@@ -816,7 +811,6 @@
         }
       }
 
-      // 分母が大きすぎる小数の場合は、小数第1〜2位相当の分数に丸める
       if (den > 24) {
         const roundedVal = Math.round((num / den) * 100) / 100;
         const rNum = Math.round(roundedVal * 100);
@@ -853,7 +847,6 @@
       return snapFraction({ num, den });
     }
 
-    // 1以上の分数は「1と1/2」のように「と」でつないで表示
     function formatFraction(frac) {
       const clean = snapFraction(frac);
       if (!clean || clean.den === 0) return '';
@@ -1327,13 +1320,13 @@
     }
 
     function syncSettingsInputs() {
-      document.getElementById('gasUrlInput').value = state.gasUrl || '';
+      document.getElementById('gasUrlInput').value = state.gasUrl || DEFAULT_GAS_URL || '';
       document.getElementById('shareKeyInput').value = state.shareKey || DEFAULT_SHARE_KEY;
     }
 
     function readSettingsInputs() {
-      const url = (document.getElementById('gasUrlInput').value || '').trim();
-      const key = (document.getElementById('shareKeyInput').value || '').trim() || DEFAULT_SHARE_KEY;
+      const url = cleanStr(document.getElementById('gasUrlInput').value) || DEFAULT_GAS_URL;
+      const key = cleanStr(document.getElementById('shareKeyInput').value) || DEFAULT_SHARE_KEY;
       state.gasUrl = url;
       state.shareKey = key;
       saveLocalState();
@@ -1375,8 +1368,8 @@
     }
 
     async function loadFromCloud(showAlert = true) {
-      const url = (state.gasUrl || '').trim();
-      const key = (state.shareKey || DEFAULT_SHARE_KEY).trim();
+      const url = cleanStr(state.gasUrl) || DEFAULT_GAS_URL;
+      const key = cleanStr(state.shareKey) || DEFAULT_SHARE_KEY;
       if (!url) {
         if (showAlert) alert('「設定・JSON」タブでGAS ウェブアプリURLを設定してください。');
         return false;
@@ -1407,8 +1400,8 @@
 
     async function saveToCloud(showAlert = true) {
       if (isSavingCloud) return false;
-      const url = (state.gasUrl || '').trim();
-      const key = (state.shareKey || DEFAULT_SHARE_KEY).trim();
+      const url = cleanStr(state.gasUrl) || DEFAULT_GAS_URL;
+      const key = cleanStr(state.shareKey) || DEFAULT_SHARE_KEY;
       if (!url) {
         if (showAlert) alert('「設定・JSON」タブでGAS ウェブアプリURLを設定してください。');
         return false;
