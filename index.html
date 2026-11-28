@@ -15,15 +15,11 @@
       --accent: #c85a32;
       --accent-dark: #a84522;
       --accent-soft: #fdf0ea;
-      --ok: #2e7d5b;
-      --warn: #b5651d;
       --radius: 14px;
       --shadow: 0 4px 16px rgba(43, 38, 35, 0.06);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -63,10 +59,7 @@
       gap: 8px;
     }
 
-    button,
-    input,
-    select,
-    textarea {
+    button, input, select, textarea {
       font-family: inherit;
       font-size: 0.95rem;
     }
@@ -80,14 +73,8 @@
       transition: opacity 0.15s ease, transform 0.1s ease, background 0.15s ease;
     }
 
-    button:active {
-      transform: scale(0.98);
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    button:active { transform: scale(0.98); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
 
     .btn-ghost {
       background: rgba(255, 255, 255, 0.16);
@@ -95,34 +82,12 @@
       border-color: rgba(255, 255, 255, 0.35);
     }
 
-    .btn-ghost:hover {
-      background: rgba(255, 255, 255, 0.26);
-    }
-
-    .btn-primary {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .btn-primary:hover {
-      background: var(--accent-dark);
-    }
-
-    .btn-secondary {
-      background: var(--surface-soft);
-      color: var(--ink);
-      border-color: var(--line);
-    }
-
-    .btn-secondary:hover {
-      background: #f1ece3;
-    }
-
-    .btn-danger {
-      background: #fff3f0;
-      color: #b83227;
-      border-color: #f4c7c2;
-    }
+    .btn-ghost:hover { background: rgba(255, 255, 255, 0.26); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-secondary { background: var(--surface-soft); color: var(--ink); border-color: var(--line); }
+    .btn-secondary:hover { background: #f1ece3; }
+    .btn-danger { background: #fff3f0; color: #b83227; border-color: #f4c7c2; }
 
     .status-banner {
       max-width: 860px;
@@ -159,6 +124,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
@@ -168,10 +134,7 @@
       margin-bottom: 10px;
     }
 
-    input[type="text"],
-    input[type="url"],
-    select,
-    textarea {
+    input[type="text"], input[type="url"], select, textarea {
       width: 100%;
       padding: 10px 12px;
       border: 1px solid var(--line);
@@ -180,20 +143,14 @@
       color: var(--ink);
     }
 
-    input::placeholder,
-    textarea::placeholder {
-      color: #a59c94;
-    }
-
-    textarea {
-      min-height: 84px;
-      resize: vertical;
-    }
+    input::placeholder, textarea::placeholder { color: #a59c94; }
+    textarea { min-height: 84px; resize: vertical; }
 
     .filter-pills {
       display: flex;
       gap: 8px;
       flex-wrap: wrap;
+      margin-bottom: 10px;
     }
 
     .pill {
@@ -211,10 +168,7 @@
       border-color: var(--accent);
     }
 
-    .recipe-list {
-      display: grid;
-      gap: 10px;
-    }
+    .recipe-list { display: grid; gap: 10px; }
 
     .recipe-item {
       background: var(--surface);
@@ -234,11 +188,7 @@
       transform: translateY(-1px);
     }
 
-    .recipe-title {
-      font-weight: 700;
-      font-size: 1rem;
-      margin-bottom: 4px;
-    }
+    .recipe-title { font-weight: 700; font-size: 1rem; margin-bottom: 4px; }
 
     .recipe-meta {
       font-size: 0.85rem;
@@ -258,14 +208,8 @@
       font-weight: 700;
     }
 
-    .chev {
-      color: var(--muted);
-      font-size: 1.2rem;
-    }
-
-    .field {
-      margin-bottom: 12px;
-    }
+    .chev { color: var(--muted); font-size: 1.2rem; }
+    .field { margin-bottom: 12px; }
 
     .field label {
       display: block;
@@ -275,11 +219,7 @@
       color: var(--ink);
     }
 
-    .hint {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 4px;
-    }
+    .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 
     .ing-row {
       display: grid;
@@ -290,18 +230,11 @@
     }
 
     @media (max-width: 640px) {
-      .ing-row {
-        grid-template-columns: 68px 1fr 96px auto;
-      }
-      .ing-custom {
-        grid-column: 1 / -2;
-      }
+      .ing-row { grid-template-columns: 68px 1fr 96px auto; }
+      .ing-custom { grid-column: 1 / -2; }
     }
 
-    .meal-grid {
-      display: grid;
-      gap: 10px;
-    }
+    .meal-grid { display: grid; gap: 10px; }
 
     .meal-day {
       border: 1px solid var(--line);
@@ -333,20 +266,9 @@
       border-bottom: 1px solid var(--line);
     }
 
-    .shop-item:last-child {
-      border-bottom: none;
-    }
-
-    .shop-left {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .shop-done {
-      text-decoration: line-through;
-      color: var(--muted);
-    }
+    .shop-item:last-child { border-bottom: none; }
+    .shop-left { display: flex; align-items: center; gap: 10px; }
+    .shop-done { text-decoration: line-through; color: var(--muted); }
 
     .bottom-nav {
       position: fixed;
@@ -389,9 +311,7 @@
       padding: 14px;
     }
 
-    .modal-backdrop.open {
-      display: flex;
-    }
+    .modal-backdrop.open { display: flex; }
 
     .modal {
       background: var(--surface);
@@ -412,23 +332,9 @@
       margin-bottom: 12px;
     }
 
-    .modal-title {
-      margin: 0;
-      font-size: 1.15rem;
-      font-weight: 700;
-    }
-
-    .row-actions {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-
-    .empty {
-      text-align: center;
-      color: var(--muted);
-      padding: 24px 12px;
-    }
+    .modal-title { margin: 0; font-size: 1.15rem; font-weight: 700; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+    .empty { text-align: center; color: var(--muted); padding: 24px 12px; }
   </style>
 </head>
 <body>
@@ -465,15 +371,27 @@
       <div class="recipe-list" id="recipeList"></div>
     </section>
 
-    <!-- 献立タブ -->
+    <!-- 献立タブ（1か月＝4週対応＋買い物リストへ反映ボタン） -->
     <section id="tab-meals" class="tab-view" style="display:none;">
       <div class="card">
         <div class="card-title">
-          <span>📅 週間献立</span>
-          <button type="button" class="btn-secondary" id="btnClearMeals">献立をクリア</button>
+          <span>📅 献立作成（1か月・4週間）</span>
+          <div class="row-actions">
+            <button type="button" class="btn-secondary" id="btnAutoFillMonth">1か月分を自動作成</button>
+            <button type="button" class="btn-primary" id="btnReflectShopping">🛒 買い物リストへ反映</button>
+            <button type="button" class="btn-secondary" id="btnClearMeals">クリア</button>
+          </div>
         </div>
+
+        <div class="filter-pills" id="weekPills">
+          <button type="button" class="pill active" data-week="1">第1週</button>
+          <button type="button" class="pill" data-week="2">第2週</button>
+          <button type="button" class="pill" data-week="3">第3週</button>
+          <button type="button" class="pill" data-week="4">第4週</button>
+        </div>
+
         <p class="hint" style="margin-top:0;margin-bottom:12px;">
-          各曜日の枠にレシピを選ぶと、自動的に「買い物」タブへ材料が集計されます。
+          第1週〜第4週（1か月分）を選んで献立を作成し、「買い物リストへ反映」を押すと材料が買い物タブへ反映されます。
         </p>
         <div class="meal-grid" id="mealGrid"></div>
       </div>
@@ -488,6 +406,7 @@
             <button type="button" class="btn-secondary" id="btnResetChecks">チェック解除</button>
           </div>
         </div>
+        <p class="hint" id="shoppingScopeLabel" style="margin-top:0;margin-bottom:10px;"></p>
         <div class="search-row">
           <input type="text" id="customShopInput" placeholder="追加の買い物アイテムを入力..." />
           <button type="button" class="btn-primary" id="btnAddCustomShop">追加</button>
@@ -584,7 +503,7 @@
           <textarea id="recipeMemoInput" placeholder="アレンジや作り置きメモなど..."></textarea>
         </div>
         <div class="field">
-          <label for="recipeUrlInput">参考URL（任意・画像ではなくリンクで保存）</label>
+          <label for="recipeUrlInput">参考URL（任意）</label>
           <input type="url" id="recipeUrlInput" placeholder="https://cookien.com/..." />
         </div>
         <div class="row-actions">
@@ -603,8 +522,9 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v1';
+    const STORAGE_KEY = 'uchino_recipe_app_state_v2';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
+    const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
     const AMOUNT_OPTIONS = [
       '', '1/8', '1/6', '1/4', '1/3', '1/2', '2/3', '3/4',
@@ -624,13 +544,10 @@
             { group: '', name: '鶏もも肉', amount: 'カスタム', customAmount: '300g' },
             { group: 'A', name: '長ねぎ', amount: '1/2', customAmount: '' },
             { group: 'A', name: 'ごま油', amount: '1', customAmount: '大さじ1' },
-            { group: 'A', name: '鶏がらスープの素', amount: '1', customAmount: '小さじ1' },
-            { group: 'A', name: 'レモン汁', amount: '1', customAmount: '小さじ1' },
-            { group: 'A', name: '塩', amount: '少々', customAmount: '' },
-            { group: 'A', name: '黒こしょう', amount: '少々', customAmount: '' }
+            { group: 'A', name: '鶏がらスープの素', amount: '1', customAmount: '小さじ1' }
           ],
-          steps: '1. 鶏もも肉は一口大に切り、耐熱皿に並べる。\n2. 混ぜ合わせたAをかけ、ふんわりラップして電子レンジ（600W）で約5〜6分加熱する。',
-          memo: '余ったタレをごはんにかけてもおいしい。',
+          steps: '1. 鶏もも肉にAをかけ、電子レンジ（600W）で約5〜6分加熱する。',
+          memo: '',
           url: 'https://cookien.com/'
         },
         {
@@ -641,12 +558,9 @@
             { group: '', name: '豚こま切れ肉', amount: 'カスタム', customAmount: '250g' },
             { group: '', name: 'キャベツ', amount: '1/4', customAmount: '' },
             { group: '〇', name: '味噌', amount: '1', customAmount: '大さじ1' },
-            { group: '〇', name: 'みりん', amount: '1', customAmount: '大さじ1' },
-            { group: '〇', name: '酒', amount: '1', customAmount: '大さじ1' },
-            { group: '', name: 'バター', amount: '1', customAmount: '10g' },
-            { group: '', name: 'にんにくチューブ', amount: 'カスタム', customAmount: '3cm' }
+            { group: '', name: 'バター', amount: '1', customAmount: '10g' }
           ],
-          steps: '1. キャベツはざく切りにする。\n2. フライパンで豚肉とにんにくを炒め、キャベツを加えてしんなりしたら〇とバターを絡める。',
+          steps: '1. 豚肉とキャベツを炒め、味噌とバターを絡める。',
           memo: '',
           url: ''
         },
@@ -657,12 +571,9 @@
           ingredients: [
             { group: '', name: 'さば水煮缶', amount: '1', customAmount: '1缶' },
             { group: '', name: 'トマト', amount: '1/2', customAmount: '' },
-            { group: '', name: 'ピザ用チーズ', amount: 'カスタム', customAmount: '60g' },
-            { group: '', name: 'オリーブオイル', amount: 'カスタム', customAmount: '小さじ2' },
-            { group: '', name: '塩こしょう', amount: '少々', customAmount: '' },
-            { group: '', name: 'パセリ', amount: '少々', customAmount: '' }
+            { group: '', name: 'ピザ用チーズ', amount: 'カスタム', customAmount: '60g' }
           ],
-          steps: '1. 耐熱皿に水気を切ったさばと角切りトマトを入れ、塩こしょうとオリーブオイルを回しかける。\n2. チーズをのせてトースターまたはグリルで焼き色がつくまで焼く。',
+          steps: '1. 耐熱皿にさばとトマトを入れてチーズをのせ、焼く。',
           memo: '',
           url: ''
         },
@@ -673,24 +584,24 @@
           ingredients: [
             { group: '', name: 'ブロッコリー', amount: '1/2', customAmount: '' },
             { group: '', name: 'ハーフベーコン', amount: 'カスタム', customAmount: '4枚' },
-            { group: '', name: 'にんにく', amount: '1/2', customAmount: '1片' },
-            { group: '', name: 'オリーブオイル', amount: '1', customAmount: '大さじ1/2' },
-            { group: '', name: 'しょうゆ', amount: 'カスタム', customAmount: '小さじ1' },
-            { group: '', name: '粗びき黒こしょう', amount: '少々', customAmount: '' }
+            { group: '', name: 'にんにく', amount: '1/2', customAmount: '1片' }
           ],
-          steps: '1. ブロッコリーは小房に分け、ベーコンは1cm幅に切る。\n2. オリーブオイルとにんにくを熱し、ベーコンとブロッコリーを炒めてしょうゆと黒こしょうで調える。',
-          memo: 'お弁当の隙間おかずにも便利。',
+          steps: '1. ブロッコリーとベーコンをにんにくと炒める。',
+          memo: '',
           url: ''
         }
       ],
       meals: {},
+      reflectedMealKeys: [],
       customShopping: [],
       checkedShopping: {}
     };
 
     let state = loadLocalState();
     let activeCategory = 'すべて';
+    let activeWeek = 1;
     let currentDetailId = null;
+    let isSavingCloud = false;
 
     function loadLocalState() {
       try {
@@ -707,6 +618,7 @@
             ? parsed.recipes
             : structuredClone(SEED_DATA.recipes),
           meals: parsed.meals && typeof parsed.meals === 'object' ? parsed.meals : {},
+          reflectedMealKeys: Array.isArray(parsed.reflectedMealKeys) ? parsed.reflectedMealKeys : [],
           customShopping: Array.isArray(parsed.customShopping) ? parsed.customShopping : [],
           checkedShopping: parsed.checkedShopping && typeof parsed.checkedShopping === 'object'
             ? parsed.checkedShopping
@@ -733,17 +645,20 @@
       } else if (state.gasUrl) {
         statusEl.textContent = 'GAS URL設定済み';
       } else {
-        statusEl.textContent = 'ローカル保存モード（設定からGAS連携可能）';
+        statusEl.textContent = 'ローカル保存モード';
       }
     }
 
+    function setSavingButtonsDisabled(disabled) {
+      ['btnTopSave', 'btnSettingsSave'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = disabled;
+      });
+    }
+
     function formatIngredientAmount(ing) {
-      if (ing.amount === 'カスタム') {
-        return ing.customAmount || '';
-      }
-      if (ing.amount && ing.customAmount) {
-        return `${ing.amount}（${ing.customAmount}）`;
-      }
+      if (ing.amount === 'カスタム') return ing.customAmount || '';
+      if (ing.amount && ing.customAmount) return `${ing.amount}（${ing.customAmount}）`;
       return ing.amount || ing.customAmount || '';
     }
 
@@ -880,11 +795,12 @@
         <button type="button" class="btn-danger btn-remove-ing" title="行を削除">×</button>
       `;
 
-      div.querySelector('.btn-remove-ing').addEventListener('click', () => {
-        div.remove();
-      });
-
+      div.querySelector('.btn-remove-ing').addEventListener('click', () => div.remove());
       container.appendChild(div);
+    }
+
+    function getMealKey(week, day) {
+      return `w${week}_${day}`;
     }
 
     function renderMeals() {
@@ -896,21 +812,23 @@
         )
       ].join('');
 
-      grid.innerHTML = DAYS.map((day) => {
-        const dayMeals = state.meals[day] || { main: '', side: '' };
+      grid.innerHTML = DAYS.map((day, idx) => {
+        const dayNum = (activeWeek - 1) * 7 + idx + 1;
+        const key = getMealKey(activeWeek, day);
+        const dayMeals = state.meals[key] || { main: '', side: '' };
         return `
           <div class="meal-day">
-            <div class="meal-day-head"><span>${day}曜日</span></div>
+            <div class="meal-day-head"><span>第${activeWeek}週 ${day}曜日（${dayNum}日目）</span></div>
             <div class="meal-slots">
               <div>
                 <label class="hint" style="display:block;margin-bottom:3px;">主菜・メイン</label>
-                <select class="meal-select" data-day="${day}" data-slot="main">
+                <select class="meal-select" data-key="${escapeAttr(key)}" data-slot="main">
                   ${recipeOptions}
                 </select>
               </div>
               <div>
                 <label class="hint" style="display:block;margin-bottom:3px;">副菜・汁物など</label>
-                <select class="meal-select" data-day="${day}" data-slot="side">
+                <select class="meal-select" data-key="${escapeAttr(key)}" data-slot="side">
                   ${recipeOptions}
                 </select>
               </div>
@@ -920,24 +838,77 @@
       }).join('');
 
       grid.querySelectorAll('.meal-select').forEach((sel) => {
-        const day = sel.dataset.day;
+        const key = sel.dataset.key;
         const slot = sel.dataset.slot;
-        sel.value = (state.meals[day] && state.meals[day][slot]) || '';
+        sel.value = (state.meals[key] && state.meals[key][slot]) || '';
         sel.addEventListener('change', () => {
-          if (!state.meals[day]) state.meals[day] = { main: '', side: '' };
-          state.meals[day][slot] = sel.value;
+          if (!state.meals[key]) state.meals[key] = { main: '', side: '' };
+          state.meals[key][slot] = sel.value;
           saveLocalState();
-          renderShopping();
         });
       });
     }
 
+    function autoFillMonthMeals() {
+      if (state.recipes.length === 0) return;
+      const mains = state.recipes.filter((r) => r.category === '主菜');
+      const sides = state.recipes.filter((r) => r.category !== '主菜');
+      const mainPool = mains.length > 0 ? mains : state.recipes;
+      const sidePool = sides.length > 0 ? sides : state.recipes;
+
+      let i = 0;
+      WEEKS.forEach((w) => {
+        DAYS.forEach((d) => {
+          const key = getMealKey(w, d);
+          state.meals[key] = {
+            main: mainPool[i % mainPool.length].id,
+            side: sidePool[i % sidePool.length].id
+          };
+          i += 1;
+        });
+      });
+
+      saveLocalState();
+      renderMeals();
+      alert('第1週〜第4週（1か月分）の献立を作成しました！');
+    }
+
+    function reflectMealsToShopping() {
+      const keys = [];
+      WEEKS.forEach((w) => {
+        DAYS.forEach((d) => {
+          const key = getMealKey(w, d);
+          const m = state.meals[key];
+          if (m && (m.main || m.side)) {
+            keys.push(key);
+          }
+        });
+      });
+
+      if (keys.length === 0) {
+        alert('反映できる献立がまだ選択されていません。献立を選んでから押してください。');
+        return;
+      }
+
+      state.reflectedMealKeys = keys;
+      saveLocalState();
+      renderShopping();
+      switchTab('shopping');
+      alert(`献立（${keys.length}日分）の材料を買い物リストへ反映しました！`);
+    }
+
     function renderShopping() {
       const listEl = document.getElementById('shoppingList');
-      const items = [];
+      const scopeEl = document.getElementById('shoppingScopeLabel');
+      const activeKeys = Array.isArray(state.reflectedMealKeys) ? state.reflectedMealKeys : [];
 
-      DAYS.forEach((day) => {
-        const dayMeals = state.meals[day] || {};
+      scopeEl.textContent = activeKeys.length > 0
+        ? `反映中の献立：${activeKeys.length}日分（献立タブの「買い物リストへ反映」で更新）`
+        : '献立タブで献立を選び、「🛒 買い物リストへ反映」を押すと材料が表示されます。';
+
+      const items = [];
+      activeKeys.forEach((key) => {
+        const dayMeals = state.meals[key] || {};
         ['main', 'side'].forEach((slot) => {
           const recId = dayMeals[slot];
           if (!recId) return;
@@ -946,11 +917,11 @@
           (recipe.ingredients || []).forEach((ing) => {
             if (!ing.name) return;
             const amt = formatIngredientAmount(ing);
-            const key = `meal:${day}:${slot}:${ing.name}:${amt}`;
+            const itemKey = `meal:${key}:${slot}:${ing.name}:${amt}`;
             items.push({
-              key,
+              key: itemKey,
               label: `${ing.name}${amt ? `（${amt}）` : ''}`,
-              sub: `${day}曜・${recipe.title}`
+              sub: `${key.replace('w', '第').replace('_', '週 ')}曜・${recipe.title}`
             });
           });
         });
@@ -966,7 +937,7 @@
       });
 
       if (items.length === 0) {
-        listEl.innerHTML = '<div class="empty">献立を選ぶか、上の欄からアイテムを追加してください。</div>';
+        listEl.innerHTML = '<div class="empty">反映された献立材料や追加アイテムはありません。</div>';
         return;
       }
 
@@ -1027,6 +998,7 @@
       return {
         recipes: state.recipes,
         meals: state.meals,
+        reflectedMealKeys: state.reflectedMealKeys,
         customShopping: state.customShopping,
         checkedShopping: state.checkedShopping
       };
@@ -1034,21 +1006,14 @@
 
     function applyCloudPayloadData(payload, updatedAt) {
       if (!payload || typeof payload !== 'object') return;
-      if (Array.isArray(payload.recipes)) {
-        state.recipes = payload.recipes;
-      }
-      if (payload.meals && typeof payload.meals === 'object') {
-        state.meals = payload.meals;
-      }
-      if (Array.isArray(payload.customShopping)) {
-        state.customShopping = payload.customShopping;
-      }
+      if (Array.isArray(payload.recipes)) state.recipes = payload.recipes;
+      if (payload.meals && typeof payload.meals === 'object') state.meals = payload.meals;
+      if (Array.isArray(payload.reflectedMealKeys)) state.reflectedMealKeys = payload.reflectedMealKeys;
+      if (Array.isArray(payload.customShopping)) state.customShopping = payload.customShopping;
       if (payload.checkedShopping && typeof payload.checkedShopping === 'object') {
         state.checkedShopping = payload.checkedShopping;
       }
-      if (updatedAt) {
-        state.updatedAt = updatedAt;
-      }
+      if (updatedAt) state.updatedAt = updatedAt;
       saveLocalState();
       renderRecipes();
       renderMeals();
@@ -1066,10 +1031,8 @@
       updateStatusBar('クラウドから最新データ取得中…');
       try {
         const endpoint = `${url}${url.includes('?') ? '&' : '?'}key=${encodeURIComponent(key)}&_=${Date.now()}`;
-        const res = await fetch(endpoint, { method: 'GET' });
-        if (!res.ok) {
-          throw new Error(`HTTPエラー (${res.status})`);
-        }
+        const res = await fetch(endpoint, { method: 'GET', cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTPエラー (${res.status})`);
         const json = await res.json();
         if (json.status === 'error' || json.ok === false) {
           throw new Error(json.message || '読み込みに失敗しました');
@@ -1079,20 +1042,17 @@
         } else {
           updateStatusBar('クラウドにデータがありません');
         }
-        if (showAlert) {
-          alert('パートナーの最新データを読み込みました！');
-        }
+        if (showAlert) alert('パートナーの最新データを読み込みました！');
         return true;
       } catch (err) {
         updateStatusBar('読み込みエラー');
-        if (showAlert) {
-          alert(`同期エラー: ${err && err.message ? err.message : err}`);
-        }
+        if (showAlert) alert(`同期エラー: ${err && err.message ? err.message : err}`);
         return false;
       }
     }
 
     async function saveToCloud(showAlert = true) {
+      if (isSavingCloud) return false;
       const url = (state.gasUrl || '').trim();
       const key = (state.shareKey || DEFAULT_SHARE_KEY).trim();
       if (!url) {
@@ -1100,11 +1060,15 @@
         return false;
       }
 
+      isSavingCloud = true;
+      setSavingButtonsDisabled(true);
       updateStatusBar('クラウドへ共有保存中…');
+
       try {
         await fetch(url, {
           method: 'POST',
           mode: 'no-cors',
+          cache: 'no-store',
           headers: {
             'Content-Type': 'text/plain;charset=utf-8'
           },
@@ -1118,7 +1082,7 @@
         state.updatedAt = nowText;
         saveLocalState();
         if (showAlert) {
-          alert('共有保存リクエストを送信しました！スプレッドシートの更新を確認してください。');
+          alert('共有保存リクエストを送信しました！');
         }
         return true;
       } catch (err) {
@@ -1127,6 +1091,9 @@
           alert(`保存通信エラー: ${err && err.message ? err.message : err}`);
         }
         return false;
+      } finally {
+        isSavingCloud = false;
+        setSavingButtonsDisabled(false);
       }
     }
 
@@ -1139,10 +1106,8 @@
       updateStatusBar('接続テスト中…');
       try {
         const endpoint = `${url}${url.includes('?') ? '&' : '?'}action=test&key=${encodeURIComponent(key)}&_=${Date.now()}`;
-        const res = await fetch(endpoint, { method: 'GET' });
-        if (!res.ok) {
-          throw new Error(`HTTPエラー (${res.status})`);
-        }
+        const res = await fetch(endpoint, { method: 'GET', cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTPエラー (${res.status})`);
         const json = await res.json();
         if (json.status === 'error' || json.ok === false) {
           throw new Error(json.message || '接続テストに失敗しました');
@@ -1167,22 +1132,22 @@
       return escapeHtml(str).replace(/'/g, '&#39;');
     }
 
-    // タブ切り替え
-    document.querySelectorAll('.nav-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const target = btn.dataset.tab;
-        document.querySelectorAll('.nav-btn').forEach((b) => b.classList.remove('active'));
-        btn.classList.add('active');
-        document.querySelectorAll('.tab-view').forEach((view) => {
-          view.style.display = view.id === `tab-${target}` ? '' : 'none';
-        });
-        if (target === 'meals') renderMeals();
-        if (target === 'shopping') renderShopping();
-        if (target === 'settings') syncSettingsInputs();
+    function switchTab(target) {
+      document.querySelectorAll('.nav-btn').forEach((b) => {
+        b.classList.toggle('active', b.dataset.tab === target);
       });
+      document.querySelectorAll('.tab-view').forEach((view) => {
+        view.style.display = view.id === `tab-${target}` ? '' : 'none';
+      });
+      if (target === 'meals') renderMeals();
+      if (target === 'shopping') renderShopping();
+      if (target === 'settings') syncSettingsInputs();
+    }
+
+    document.querySelectorAll('.nav-btn').forEach((btn) => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
 
-    // カテゴリ・検索
     document.querySelectorAll('#categoryPills .pill').forEach((pill) => {
       pill.addEventListener('click', () => {
         document.querySelectorAll('#categoryPills .pill').forEach((p) => p.classList.remove('active'));
@@ -1191,9 +1156,17 @@
         renderRecipes();
       });
     });
-    document.getElementById('recipeSearch').addEventListener('input', renderRecipes);
 
-    // モーダル操作
+    document.querySelectorAll('#weekPills .pill').forEach((pill) => {
+      pill.addEventListener('click', () => {
+        document.querySelectorAll('#weekPills .pill').forEach((p) => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeWeek = Number(pill.dataset.week);
+        renderMeals();
+      });
+    });
+
+    document.getElementById('recipeSearch').addEventListener('input', renderRecipes);
     document.getElementById('btnOpenAddRecipe').addEventListener('click', () => openFormModal(null));
     document.getElementById('btnCloseDetail').addEventListener('click', () => {
       document.getElementById('detailModal').classList.remove('open');
@@ -1259,10 +1232,13 @@
       document.getElementById('formModal').classList.remove('open');
     });
 
-    // 献立・買い物操作
+    document.getElementById('btnAutoFillMonth').addEventListener('click', autoFillMonthMeals);
+    document.getElementById('btnReflectShopping').addEventListener('click', reflectMealsToShopping);
+
     document.getElementById('btnClearMeals').addEventListener('click', () => {
-      if (!confirm('週間献立をすべてクリアしますか？')) return;
+      if (!confirm('献立をすべてクリアしますか？')) return;
       state.meals = {};
+      state.reflectedMealKeys = [];
       saveLocalState();
       renderMeals();
       renderShopping();
@@ -1284,7 +1260,6 @@
       renderShopping();
     });
 
-    // JSON読み込み・書き出し
     document.getElementById('jsonFileInput').addEventListener('change', (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
@@ -1326,7 +1301,6 @@
       URL.revokeObjectURL(url);
     });
 
-    // 同期ボタン
     document.getElementById('btnTopLoad').addEventListener('click', () => loadFromCloud(true));
     document.getElementById('btnTopSave').addEventListener('click', () => saveToCloud(true));
     document.getElementById('btnSaveAndTest').addEventListener('click', testConnection);
@@ -1339,7 +1313,6 @@
       saveToCloud(true);
     });
 
-    // 初期描画と自動読込
     syncSettingsInputs();
     renderRecipes();
     renderMeals();
