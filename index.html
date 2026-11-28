@@ -1102,8 +1102,9 @@
 
       updateStatusBar('クラウドへ共有保存中…');
       try {
-        const res = await fetch(url, {
+        await fetch(url, {
           method: 'POST',
+          mode: 'no-cors',
           headers: {
             'Content-Type': 'text/plain;charset=utf-8'
           },
@@ -1113,21 +1114,11 @@
           })
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTPエラー (${res.status})`);
-        }
-        const json = await res.json();
-        if (json.status === 'error' || json.ok === false) {
-          throw new Error(json.message || '保存に失敗しました');
-        }
-        if (json.updatedAt) {
-          state.updatedAt = json.updatedAt;
-          saveLocalState();
-        } else {
-          updateStatusBar('共有保存完了');
-        }
+        const nowText = new Date().toLocaleString('ja-JP');
+        state.updatedAt = nowText;
+        saveLocalState();
         if (showAlert) {
-          alert('クラウドへ共有保存しました！');
+          alert('共有保存リクエストを送信しました！スプレッドシートの更新を確認してください。');
         }
         return true;
       } catch (err) {
