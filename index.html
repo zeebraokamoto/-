@@ -90,7 +90,7 @@
     .btn-danger { background: #fff3f0; color: #b83227; border-color: #f4c7c2; }
 
     .status-banner {
-      max-width: 860px;
+      max-width: 920px;
       margin: 12px auto 0;
       padding: 8px 14px;
       font-size: 0.85rem;
@@ -103,7 +103,7 @@
     }
 
     .container {
-      max-width: 860px;
+      max-width: 920px;
       margin: 6px auto 0;
       padding: 0 14px;
     }
@@ -132,6 +132,7 @@
       display: flex;
       gap: 8px;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
 
     input[type="text"], input[type="url"], select, textarea {
@@ -221,9 +222,10 @@
 
     .hint { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 
+    /* グループ(－/〇/A) -> 区分 -> 材料名 -> 数量 -> カスタム -> 単位 -> 削除 */
     .ing-row {
       display: grid;
-      grid-template-columns: 56px 86px 1.25fr 92px 86px 110px auto;
+      grid-template-columns: 56px 132px 1.25fr 96px 104px 92px auto;
       gap: 6px;
       margin-bottom: 8px;
       align-items: center;
@@ -234,9 +236,9 @@
       background: var(--accent-soft);
     }
 
-    @media (max-width: 780px) {
-      .ing-row { grid-template-columns: 54px 82px 1fr auto; }
-      .ing-amount, .ing-unit, .ing-custom { grid-column: span 2; }
+    @media (max-width: 820px) {
+      .ing-row { grid-template-columns: 54px 120px 1fr auto; }
+      .ing-amount, .ing-custom, .ing-unit { grid-column: span 2; }
     }
 
     .meal-grid { display: grid; gap: 10px; }
@@ -333,7 +335,7 @@
     .modal {
       background: var(--surface);
       border-radius: var(--radius);
-      max-width: 760px;
+      max-width: 820px;
       width: 100%;
       max-height: 88vh;
       overflow-y: auto;
@@ -373,7 +375,7 @@
     <section id="tab-recipes" class="tab-view">
       <div class="card">
         <div class="search-row">
-          <input type="text" id="recipeSearch" placeholder="料理名・食材・メモで検索..." />
+          <input type="text" id="recipeSearch" placeholder="料理名・食材・メモで検索..." style="flex:1;min-width:180px;" />
           <button type="button" class="btn-primary" id="btnOpenAddRecipe">+ 追加</button>
         </div>
         <div class="filter-pills" id="categoryPills">
@@ -395,7 +397,7 @@
           <span>📅 献立作成（1か月・4週間）</span>
           <div class="row-actions">
             <button type="button" class="btn-secondary" id="btnAutoFillMonth">1か月分を自動作成</button>
-            <button type="button" class="btn-primary" id="btnReflectShopping">🛒 買い物リストへ反映</button>
+            <button type="button" class="btn-primary" id="btnReflectWeekShopping">🛒 この週を買い物リストへ反映</button>
             <button type="button" class="btn-secondary" id="btnClearMeals">クリア</button>
           </div>
         </div>
@@ -407,8 +409,8 @@
           <button type="button" class="pill" data-week="4">第4週</button>
         </div>
 
-        <p class="hint" style="margin-top:0;margin-bottom:12px;">
-          第1週〜第4週（1か月分）の献立を作成し、「🛒 買い物リストへ反映」を押すと肉・魚・野菜などの区分ごとに買い物リストへ集計されます。
+        <p class="hint" id="weekHintText" style="margin-top:0;margin-bottom:12px;">
+          1か月分（第1〜4週）の献立を作成し、買い物へ行く週を選んで「🛒 この週を買い物リストへ反映」を押してください。
         </p>
         <div class="meal-grid" id="mealGrid"></div>
       </div>
@@ -425,13 +427,8 @@
         </div>
         <p class="hint" id="shoppingScopeLabel" style="margin-top:0;margin-bottom:10px;"></p>
         <div class="search-row">
-          <select id="customShopKind" style="max-width:130px;">
-            <option value="肉">肉</option>
-            <option value="魚">魚</option>
-            <option value="野菜">野菜</option>
-            <option value="調味料・その他">調味料・その他</option>
-          </select>
-          <input type="text" id="customShopInput" placeholder="追加の買い物アイテムを入力..." />
+          <select id="customShopKind" style="max-width:190px;"></select>
+          <input type="text" id="customShopInput" placeholder="追加の買い物アイテムを入力..." style="flex:1;min-width:160px;" />
           <button type="button" class="btn-primary" id="btnAddCustomShop">追加</button>
         </div>
         <div id="shoppingList"></div>
@@ -513,7 +510,7 @@
           </select>
         </div>
         <div class="field">
-          <label>材料（グループ「〇」「A」・区分・数量・単位・カスタム入力）</label>
+          <label>材料（グループ「－/〇/A」・区分・材料名・数量・カスタム・単位）</label>
           <div id="ingredientsContainer"></div>
           <button type="button" class="btn-secondary" id="btnAddIngredient">+ 材料行を追加</button>
         </div>
@@ -545,19 +542,39 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v4';
+    const STORAGE_KEY = 'uchino_recipe_app_state_v5';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
     const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
-    const FOOD_KINDS = ['肉', '魚', '野菜', '調味料・その他'];
+
+    // 買い物リストの区分順（指定順）
+    const SHOP_KINDS = [
+      '果物',
+      '野菜',
+      '魚',
+      '豆腐や納豆',
+      'ソーセージ類',
+      '肉',
+      '卵',
+      '牛乳などの乳製品',
+      '冷凍',
+      'その他'
+    ];
+
+    // 数量ドロップダウン（分数・よく使う数字・カスタム）
     const AMOUNT_OPTIONS = [
       '', '1/8', '1/6', '1/4', '1/3', '1/2', '2/3', '3/4',
-      '1', '1.5', '2', '3', '4', '5', '適量', '少々', 'カスタム'
+      '1', '1.5', '2', '2.5', '3', '4', '5', '6', '8', '10',
+      '15', '20', '25', '30', '40', '50', '60', '80', '100',
+      '120', '150', '180', '200', '250', '300', '350', '400', '500',
+      '適量', '少々', 'カスタム'
     ];
+
+    // 単位ドロップダウン
     const UNIT_OPTIONS = [
-      '', 'g', 'mg', 'kg', 'ml', 'L', '大さじ', '小さじ',
+      '', 'g', 'mg', 'kg', 'ml', 'cc', 'L', '大さじ', '小さじ',
       '個', '枚', '玉', '本', '片', '株', '束', '缶',
-      '袋', 'パック', 'カップ', '合', 'かけ', '切れ', '尾', '房'
+      '袋', 'パック', 'カップ', '合', 'かけ', '切れ', '尾', '房', '丁'
     ];
 
     const SEED_DATA = {
@@ -570,10 +587,10 @@
           title: '鶏もも肉のねぎ塩レンジ蒸し',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '肉', name: '鶏もも肉', amount: 'カスタム', unit: 'g', customAmount: '300g' },
-            { group: 'A', kind: '野菜', name: '長ねぎ', amount: '1/2', unit: '本', customAmount: '' },
-            { group: 'A', kind: '調味料・その他', name: 'ごま油', amount: '1', unit: '大さじ', customAmount: '' },
-            { group: 'A', kind: '調味料・その他', name: '鶏がらスープの素', amount: '1', unit: '小さじ', customAmount: '' }
+            { group: '', kind: '肉', name: '鶏もも肉', amount: '300', customAmount: '', unit: 'g' },
+            { group: 'A', kind: '野菜', name: '長ねぎ', amount: '1/2', customAmount: '', unit: '本' },
+            { group: 'A', kind: 'その他', name: 'ごま油', amount: '1', customAmount: '', unit: '大さじ' },
+            { group: 'A', kind: 'その他', name: '鶏がらスープの素', amount: '1', customAmount: '', unit: '小さじ' }
           ],
           steps: '1. 鶏もも肉にAをかけ、電子レンジ（600W）で約5〜6分加熱する。',
           memo: '',
@@ -584,10 +601,10 @@
           title: '豚こま切れ肉とキャベツの味噌バター炒め',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '肉', name: '豚こま切れ肉', amount: 'カスタム', unit: 'g', customAmount: '250g' },
-            { group: '', kind: '野菜', name: 'キャベツ', amount: '1/4', unit: '玉', customAmount: '' },
-            { group: '〇', kind: '調味料・その他', name: '味噌', amount: '1', unit: '大さじ', customAmount: '' },
-            { group: '', kind: '調味料・その他', name: 'バター', amount: '1', unit: 'かけ', customAmount: '10g' }
+            { group: '', kind: '肉', name: '豚こま切れ肉', amount: '250', customAmount: '', unit: 'g' },
+            { group: '', kind: '野菜', name: 'キャベツ', amount: '1/4', customAmount: '', unit: '玉' },
+            { group: '〇', kind: 'その他', name: '味噌', amount: '1', customAmount: '', unit: '大さじ' },
+            { group: '', kind: '牛乳などの乳製品', name: 'バター', amount: '10', customAmount: '', unit: 'g' }
           ],
           steps: '1. 豚肉とキャベツを炒め、味噌とバターを絡める。',
           memo: '',
@@ -598,9 +615,9 @@
           title: 'さば缶とトマトのチーズ焼き',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '魚', name: 'さば水煮缶', amount: '1', unit: '缶', customAmount: '' },
-            { group: '', kind: '野菜', name: 'トマト', amount: '1/2', unit: '個', customAmount: '' },
-            { group: '', kind: '調味料・その他', name: 'ピザ用チーズ', amount: 'カスタム', unit: 'g', customAmount: '60g' }
+            { group: '', kind: '魚', name: 'さば水煮缶', amount: '1', customAmount: '', unit: '缶' },
+            { group: '', kind: '野菜', name: 'トマト', amount: '1/2', customAmount: '', unit: '個' },
+            { group: '', kind: '牛乳などの乳製品', name: 'ピザ用チーズ', amount: '60', customAmount: '', unit: 'g' }
           ],
           steps: '1. 耐熱皿にさばとトマトを入れてチーズをのせ、焼く。',
           memo: '',
@@ -608,19 +625,20 @@
         },
         {
           id: 'rec_004',
-          title: 'ブロッコリーとベーコンのガーリック炒め',
+          title: 'ブロッコリーとソーセージの炒め物',
           category: '副菜',
           ingredients: [
-            { group: '', kind: '野菜', name: 'ブロッコリー', amount: '1/2', unit: '株', customAmount: '' },
-            { group: '', kind: '肉', name: 'ハーフベーコン', amount: '4', unit: '枚', customAmount: '' },
-            { group: '', kind: '野菜', name: 'にんにく', amount: '1/2', unit: '片', customAmount: '' }
+            { group: '', kind: '野菜', name: 'ブロッコリー', amount: '1/2', customAmount: '', unit: '株' },
+            { group: '', kind: 'ソーセージ類', name: 'ウインナーソーセージ', amount: '4', customAmount: '', unit: '本' },
+            { group: '', kind: '野菜', name: 'にんにく', amount: '1/2', customAmount: '', unit: '片' }
           ],
-          steps: '1. ブロッコリーとベーコンをにんにくと炒める。',
+          steps: '1. ブロッコリーとソーセージをにんにくと炒める。',
           memo: '',
           url: ''
         }
       ],
       meals: {},
+      reflectedWeek: null,
       reflectedMealKeys: [],
       customShopping: [],
       checkedShopping: {}
@@ -632,13 +650,21 @@
     let currentDetailId = null;
     let isSavingCloud = false;
 
-    function guessFoodKind(name, rawKind) {
-      if (rawKind && FOOD_KINDS.includes(rawKind)) return rawKind;
+    function guessShopKind(name, rawKind) {
+      if (rawKind && SHOP_KINDS.includes(rawKind)) return rawKind;
+      // 過去データの互換マッピング
+      if (rawKind === '調味料・その他') return 'その他';
       const n = String(name || '');
-      if (/肉|豚|鶏|牛|ベーコン|ハム|ソーセージ|ひき肉|ミンチ/.test(n)) return '肉';
-      if (/魚|さば|鯖|鮭|サーモン|いわし|あじ|ぶり|鯛|えび|いか|たこ|缶/.test(n)) return '魚';
-      if (/野菜|ねぎ|葱|キャベツ|トマト|ブロッコリー|にんにく|玉ねぎ|人参|にんじん|じゃがいも|大根|ほうれん草|ピーマン|レタス|きのこ|しめじ|えのき/.test(n)) return '野菜';
-      return '調味料・その他';
+      if (/冷凍/.test(n)) return '冷凍';
+      if (/りんご|バナナ|みかん|いちご|ぶどう|桃|梨|キウイ|レモン|果物|フルーツ/.test(n)) return '果物';
+      if (/豆腐|納豆|厚揚げ|油揚げ|がんも/.test(n)) return '豆腐や納豆';
+      if (/ソーセージ|ウインナー|ハム|ベーコン/.test(n)) return 'ソーセージ類';
+      if (/卵|たまご|玉子/.test(n)) return '卵';
+      if (/牛乳|ミルク|ヨーグルト|チーズ|バター|生クリーム|乳製品/.test(n)) return '牛乳などの乳製品';
+      if (/肉|豚|鶏|牛|ひき肉|ミンチ/.test(n)) return '肉';
+      if (/魚|さば|鯖|鮭|サーモン|いわし|あじ|ぶり|鯛|えび|いか|たこ|缶詰/.test(n)) return '魚';
+      if (/ねぎ|葱|キャベツ|トマト|ブロッコリー|にんにく|玉ねぎ|人参|にんじん|じゃがいも|大根|ほうれん草|ピーマン|レタス|きのこ|しめじ|えのき|野菜/.test(n)) return '野菜';
+      return 'その他';
     }
 
     function normalizeRecipes(list) {
@@ -650,11 +676,11 @@
         ingredients: Array.isArray(r.ingredients)
           ? r.ingredients.map((ing) => ({
               group: ing.group || '',
-              kind: guessFoodKind(ing.name, ing.kind || ing.foodType || ing.category),
+              kind: guessShopKind(ing.name, ing.kind || ing.foodType || ing.category),
               name: ing.name || '',
               amount: ing.amount !== undefined ? String(ing.amount) : '',
-              unit: ing.unit || '',
-              customAmount: ing.customAmount || ''
+              customAmount: ing.customAmount || '',
+              unit: ing.unit || ''
             }))
           : [],
         steps: r.steps || '',
@@ -678,12 +704,13 @@
             ? normalizeRecipes(parsed.recipes)
             : structuredClone(SEED_DATA.recipes),
           meals: parsed.meals && typeof parsed.meals === 'object' ? parsed.meals : {},
+          reflectedWeek: parsed.reflectedWeek || null,
           reflectedMealKeys: Array.isArray(parsed.reflectedMealKeys) ? parsed.reflectedMealKeys : [],
           customShopping: Array.isArray(parsed.customShopping)
             ? parsed.customShopping.map((c) =>
                 typeof c === 'string'
-                  ? { name: c, kind: guessFoodKind(c, '') }
-                  : { name: c.name || '', kind: guessFoodKind(c.name, c.kind) }
+                  ? { name: c, kind: guessShopKind(c, '') }
+                  : { name: c.name || '', kind: guessShopKind(c.name, c.kind) }
               )
             : [],
           checkedShopping: parsed.checkedShopping && typeof parsed.checkedShopping === 'object'
@@ -722,17 +749,104 @@
       });
     }
 
+    // 分数・小数・整数のパース＆足し算（最大公約数で約分）
+    function gcd(a, b) {
+      let x = Math.abs(Math.round(a));
+      let y = Math.abs(Math.round(b));
+      while (y !== 0) {
+        const t = y;
+        y = x % y;
+        x = t;
+      }
+      return x || 1;
+    }
+
+    function parseNumberTokenToFraction(token) {
+      const s = String(token || '').trim();
+      if (!s) return null;
+      if (/^\d+\/\d+$/.test(s)) {
+        const [numStr, denStr] = s.split('/');
+        const num = Number(numStr);
+        const den = Number(denStr);
+        if (!den) return null;
+        return { num, den };
+      }
+      if (/^\d+(\.\d+)?$/.test(s)) {
+        const val = Number(s);
+        const parts = s.split('.');
+        const scale = parts[1] ? Math.pow(10, parts[1].length) : 1;
+        return { num: Math.round(val * scale), den: scale };
+      }
+      return null;
+    }
+
+    function addFractions(f1, f2) {
+      const num = f1.num * f2.den + f2.num * f1.den;
+      const den = f1.den * f2.den;
+      const g = gcd(num, den);
+      return { num: num / g, den: den / g };
+    }
+
+    function formatFraction(frac) {
+      if (!frac || frac.den === 0) return '';
+      if (frac.num === 0) return '0';
+      if (frac.num % frac.den === 0) {
+        return String(frac.num / frac.den);
+      }
+      if (frac.num > frac.den) {
+        const whole = Math.floor(frac.num / frac.den);
+        const rem = frac.num % frac.den;
+        return `${whole} ${rem}/${frac.den}`;
+      }
+      return `${frac.num}/${frac.den}`;
+    }
+
+    // 数量・カスタム・単位から集計用情報を抽出
+    function extractQuantityInfo(ing) {
+      const rawAmount = ing.amount !== undefined ? String(ing.amount).trim() : '';
+      const rawCustom = ing.customAmount !== undefined ? String(ing.customAmount).trim() : '';
+      const rawUnit = ing.unit !== undefined ? String(ing.unit).trim() : '';
+
+      if (rawAmount === 'カスタム') {
+        if (!rawCustom) {
+          return { kind: 'text', text: rawUnit ? rawUnit : '', unit: rawUnit };
+        }
+        // カスタム欄に「300g」や「1/2」のように入っている場合もなるべく解析
+        const match = rawCustom.match(/^(\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/);
+        if (match) {
+          const frac = parseNumberTokenToFraction(match[1]);
+          const unit = (match[2] || rawUnit || '').trim();
+          if (frac) {
+            return { kind: 'qty', frac, unit };
+          }
+        }
+        return { kind: 'text', text: rawCustom, unit: rawUnit };
+      }
+
+      if (!rawAmount && !rawCustom && !rawUnit) {
+        return { kind: 'empty', text: '', unit: '' };
+      }
+
+      const frac = parseNumberTokenToFraction(rawAmount);
+      if (frac) {
+        const unitLabel = rawCustom ? `${rawUnit}（${rawCustom}）` : rawUnit;
+        return { kind: 'qty', frac, unit: unitLabel };
+      }
+
+      // 「適量」「少々」などの文字列数量
+      const combinedText = `${rawAmount}${rawUnit}${rawCustom ? `（${rawCustom}）` : ''}`;
+      return { kind: 'text', text: combinedText, unit: rawUnit };
+    }
+
     function formatIngredientAmount(ing) {
-      if (ing.amount === 'カスタム') {
-        return ing.customAmount || '';
+      const info = extractQuantityInfo(ing);
+      if (info.kind === 'qty') {
+        return `${formatFraction(info.frac)}${info.unit}`;
       }
-      const amtPart = ing.amount || '';
-      const unitPart = ing.unit || '';
-      const base = `${amtPart}${unitPart}`;
-      if (ing.customAmount) {
-        return base ? `${base}（${ing.customAmount}）` : ing.customAmount;
+      if (info.kind === 'text') {
+        return info.text;
       }
-      return base;
+      return '';
     }
 
     function renderRecipes() {
@@ -791,7 +905,7 @@
       const ingHtml = (recipe.ingredients || [])
         .map((ing) => {
           const prefix = ing.group ? `【${escapeHtml(ing.group)}】` : '';
-          const kind = escapeHtml(guessFoodKind(ing.name, ing.kind));
+          const kind = escapeHtml(guessShopKind(ing.name, ing.kind));
           const amt = formatIngredientAmount(ing);
           return `<li>[${kind}] ${prefix}${escapeHtml(ing.name)}${amt ? `：${escapeHtml(amt)}` : ''}</li>`;
         })
@@ -808,7 +922,7 @@
       document.getElementById('detailBody').innerHTML = `
         <div class="field"><span class="badge">${escapeHtml(recipe.category || 'その他')}</span></div>
         <div class="field">
-          <label>材料（食材区分付き）</label>
+          <label>材料</label>
           <ul style="margin:4px 0 0 18px;padding:0;">${ingHtml || '<li>材料なし</li>'}</ul>
         </div>
         <div class="field">
@@ -837,7 +951,7 @@
       container.innerHTML = '';
       const rows = isEdit && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
         ? recipe.ingredients
-        : [{ group: '', kind: '野菜', name: '', amount: '1', unit: '個', customAmount: '' }];
+        : [{ group: '', kind: '野菜', name: '', amount: '1', customAmount: '', unit: '個' }];
       rows.forEach((row) => addIngredientRow(row));
 
       document.getElementById('formModal').classList.add('open');
@@ -849,13 +963,13 @@
       div.className = 'ing-row';
 
       const groupVal = data.group || '';
-      const kindVal = guessFoodKind(data.name, data.kind);
+      const kindVal = guessShopKind(data.name, data.kind);
       const nameVal = data.name || '';
       const amountVal = data.amount !== undefined ? String(data.amount) : '1';
-      const unitVal = data.unit || '';
       const customVal = data.customAmount || '';
+      const unitVal = data.unit || '';
 
-      const kindOptionsHtml = FOOD_KINDS.map(
+      const kindOptionsHtml = SHOP_KINDS.map(
         (k) => `<option value="${escapeAttr(k)}" ${k === kindVal ? 'selected' : ''}>${escapeHtml(k)}</option>`
       ).join('');
 
@@ -867,17 +981,18 @@
         (u) => `<option value="${escapeAttr(u)}" ${u === unitVal ? 'selected' : ''}>${u || '単位'}</option>`
       ).join('');
 
+      // 並び順：グループ(－/〇/A) -> 区分 -> 材料名 -> 数量 -> カスタム -> 単位 -> 削除
       div.innerHTML = `
         <select class="ing-group" title="グループ接頭辞">
           <option value="" ${groupVal === '' ? 'selected' : ''}>－</option>
           <option value="〇" ${groupVal === '〇' ? 'selected' : ''}>〇</option>
           <option value="A" ${groupVal === 'A' ? 'selected' : ''}>A</option>
         </select>
-        <select class="ing-kind" title="食材区分">${kindOptionsHtml}</select>
+        <select class="ing-kind" title="区分">${kindOptionsHtml}</select>
         <input type="text" class="ing-name" placeholder="材料名" value="${escapeAttr(nameVal)}" />
         <select class="ing-amount" title="数量">${amountOptionsHtml}</select>
+        <input type="text" class="ing-custom ${amountVal === 'カスタム' ? 'active-custom' : ''}" placeholder="カスタム" value="${escapeAttr(customVal)}" />
         <select class="ing-unit" title="単位">${unitOptionsHtml}</select>
-        <input type="text" class="ing-custom ${amountVal === 'カスタム' ? 'active-custom' : ''}" placeholder="カスタム入力" value="${escapeAttr(customVal)}" />
         <button type="button" class="btn-danger btn-remove-ing" title="行を削除">×</button>
       `;
 
@@ -901,7 +1016,17 @@
       return `w${week}_${day}`;
     }
 
+    function updateWeekButtonsAndHint() {
+      const btn = document.getElementById('btnReflectWeekShopping');
+      const hint = document.getElementById('weekHintText');
+      if (btn) btn.textContent = `🛒 第${activeWeek}週を買い物リストへ反映`;
+      if (hint) {
+        hint.textContent = `現在「第${activeWeek}週」を表示中（1か月＝第1〜4週）。買い物へ行く週を選んで「第${activeWeek}週を買い物リストへ反映」を押すと、その1週間分だけ買い物リストへ集計されます。`;
+      }
+    }
+
     function renderMeals() {
+      updateWeekButtonsAndHint();
       const grid = document.getElementById('mealGrid');
       const recipeOptions = [
         '<option value="">-- 未選択 --</option>',
@@ -971,28 +1096,25 @@
       alert('第1週〜第4週（1か月分）の献立を作成しました！');
     }
 
-    function reflectMealsToShopping() {
-      const keys = [];
-      WEEKS.forEach((w) => {
-        DAYS.forEach((d) => {
-          const key = getMealKey(w, d);
-          const m = state.meals[key];
-          if (m && (m.main || m.side)) {
-            keys.push(key);
-          }
-        });
+    // 「選んだ1週間分（activeWeek）」だけを買い物リストへ反映
+    function reflectActiveWeekToShopping() {
+      const keys = DAYS.map((d) => getMealKey(activeWeek, d));
+      const hasAny = keys.some((k) => {
+        const m = state.meals[k];
+        return m && (m.main || m.side);
       });
 
-      if (keys.length === 0) {
-        alert('反映できる献立がまだ選択されていません。献立を選んでから押してください。');
+      if (!hasAny) {
+        alert(`第${activeWeek}週の献立がまだ選択されていません。献立を選んでから押してください。`);
         return;
       }
 
+      state.reflectedWeek = activeWeek;
       state.reflectedMealKeys = keys;
       saveLocalState();
       renderShopping();
       switchTab('shopping');
-      alert(`献立（${keys.length}日分）の材料を肉・魚・野菜などの区分ごとに買い物リストへ反映しました！`);
+      alert(`第${activeWeek}週の献立を買い物リストへ反映しました！`);
     }
 
     function renderShopping() {
@@ -1000,14 +1122,42 @@
       const scopeEl = document.getElementById('shoppingScopeLabel');
       const activeKeys = Array.isArray(state.reflectedMealKeys) ? state.reflectedMealKeys : [];
 
-      scopeEl.textContent = activeKeys.length > 0
-        ? `反映中の献立：${activeKeys.length}日分（肉・魚・野菜・調味料・その他で分類表示）`
-        : '献立タブで献立を選び、「🛒 買い物リストへ反映」を押すと肉・魚・野菜などの区分ごとに材料が表示されます。';
+      if (activeKeys.length > 0) {
+        const weekLabel = state.reflectedWeek ? `第${state.reflectedWeek}週` : '選択週';
+        scopeEl.textContent = `反映中：${weekLabel}（1週間分・同じ材料×同じ単位は自動合算）`;
+      } else {
+        scopeEl.textContent = '献立タブで週を選び、「🛒 第〇週を買い物リストへ反映」を押すと1週間分の材料が合算表示されます。';
+      }
 
-      const buckets = {};
-      FOOD_KINDS.forEach((k) => {
-        buckets[k] = [];
+      // 区分ごとの材料集計マップ: kind -> name -> { name, qtyByUnit: Map(unit -> frac), extras: Set(text) }
+      const kindMap = {};
+      SHOP_KINDS.forEach((k) => {
+        kindMap[k] = new Map();
       });
+
+      function addIngredientToBucket(kind, rawName, ing) {
+        const name = String(rawName || '').trim();
+        if (!name) return;
+        const targetKind = guessShopKind(name, kind);
+        const map = kindMap[targetKind];
+        if (!map.has(name)) {
+          map.set(name, {
+            name,
+            qtyByUnit: new Map(),
+            extras: new Set()
+          });
+        }
+        const entry = map.get(name);
+        const info = extractQuantityInfo(ing);
+
+        if (info.kind === 'qty') {
+          const unitKey = info.unit || '';
+          const prev = entry.qtyByUnit.get(unitKey);
+          entry.qtyByUnit.set(unitKey, prev ? addFractions(prev, info.frac) : info.frac);
+        } else if (info.kind === 'text' && info.text) {
+          entry.extras.add(info.text);
+        }
+      }
 
       activeKeys.forEach((key) => {
         const dayMeals = state.meals[key] || {};
@@ -1017,36 +1167,49 @@
           const recipe = state.recipes.find((r) => r.id === recId);
           if (!recipe) return;
           (recipe.ingredients || []).forEach((ing) => {
-            if (!ing.name) return;
-            const kind = guessFoodKind(ing.name, ing.kind);
-            const amt = formatIngredientAmount(ing);
-            const itemKey = `meal:${key}:${slot}:${kind}:${ing.name}:${amt}`;
-            buckets[kind].push({
-              key: itemKey,
-              label: `${ing.name}${amt ? `（${amt}）` : ''}`,
-              sub: `${key.replace('w', '第').replace('_', '週 ')}曜・${recipe.title}`
-            });
+            addIngredientToBucket(ing.kind, ing.name, ing);
           });
         });
       });
 
-      (state.customShopping || []).forEach((item, idx) => {
-        const kind = guessFoodKind(item.name, item.kind);
-        buckets[kind].push({
-          key: `custom:${idx}:${kind}:${item.name}`,
-          label: item.name,
-          sub: '手入力アイテム',
-          customIndex: idx
-        });
-      });
-
       let html = '';
-      FOOD_KINDS.forEach((kind) => {
-        const groupItems = buckets[kind] || [];
-        if (groupItems.length === 0) return;
+      let totalCount = 0;
 
-        html += `<div class="shop-group-title">${escapeHtml(kind)}（${groupItems.length}）</div>`;
-        html += groupItems
+      SHOP_KINDS.forEach((kind) => {
+        const rows = [];
+        kindMap[kind].forEach((entry) => {
+          const parts = [];
+          entry.qtyByUnit.forEach((frac, unit) => {
+            parts.push(`${formatFraction(frac)}${unit}`);
+          });
+          entry.extras.forEach((ex) => {
+            parts.push(ex);
+          });
+          const summary = parts.join(' + ');
+          const key = `sum:${kind}:${entry.name}:${summary}`;
+          rows.push({
+            key,
+            label: `${entry.name}${summary ? ` ${summary}` : ''}`,
+            sub: `${kind}（合算）`
+          });
+        });
+
+        (state.customShopping || []).forEach((item, idx) => {
+          const cKind = guessShopKind(item.name, item.kind);
+          if (cKind !== kind) return;
+          rows.push({
+            key: `custom:${idx}:${kind}:${item.name}`,
+            label: item.name,
+            sub: '手入力アイテム',
+            customIndex: idx
+          });
+        });
+
+        if (rows.length === 0) return;
+        totalCount += rows.length;
+
+        html += `<div class="shop-group-title">${escapeHtml(kind)}（${rows.length}）</div>`;
+        html += rows
           .map((it) => {
             const checked = Boolean(state.checkedShopping[it.key]);
             const delBtn = it.customIndex !== undefined
@@ -1068,7 +1231,7 @@
           .join('');
       });
 
-      if (!html) {
+      if (totalCount === 0) {
         listEl.innerHTML = '<div class="empty">反映された献立材料や追加アイテムはありません。</div>';
         return;
       }
@@ -1093,6 +1256,14 @@
       });
     }
 
+    function initCustomShopKindOptions() {
+      const sel = document.getElementById('customShopKind');
+      if (!sel) return;
+      sel.innerHTML = SHOP_KINDS.map(
+        (k) => `<option value="${escapeAttr(k)}">${escapeHtml(k)}</option>`
+      ).join('');
+    }
+
     function syncSettingsInputs() {
       document.getElementById('gasUrlInput').value = state.gasUrl || '';
       document.getElementById('shareKeyInput').value = state.shareKey || DEFAULT_SHARE_KEY;
@@ -1111,6 +1282,7 @@
       return {
         recipes: state.recipes,
         meals: state.meals,
+        reflectedWeek: state.reflectedWeek,
         reflectedMealKeys: state.reflectedMealKeys,
         customShopping: state.customShopping,
         checkedShopping: state.checkedShopping
@@ -1121,12 +1293,13 @@
       if (!payload || typeof payload !== 'object') return;
       if (Array.isArray(payload.recipes)) state.recipes = normalizeRecipes(payload.recipes);
       if (payload.meals && typeof payload.meals === 'object') state.meals = payload.meals;
+      if (payload.reflectedWeek) state.reflectedWeek = payload.reflectedWeek;
       if (Array.isArray(payload.reflectedMealKeys)) state.reflectedMealKeys = payload.reflectedMealKeys;
       if (Array.isArray(payload.customShopping)) {
         state.customShopping = payload.customShopping.map((c) =>
           typeof c === 'string'
-            ? { name: c, kind: guessFoodKind(c, '') }
-            : { name: c.name || '', kind: guessFoodKind(c.name, c.kind) }
+            ? { name: c, kind: guessShopKind(c, '') }
+            : { name: c.name || '', kind: guessShopKind(c.name, c.kind) }
         );
       }
       if (payload.checkedShopping && typeof payload.checkedShopping === 'object') {
@@ -1323,10 +1496,10 @@
         const group = row.querySelector('.ing-group').value;
         const kind = row.querySelector('.ing-kind').value;
         const amount = row.querySelector('.ing-amount').value;
-        const unit = row.querySelector('.ing-unit').value;
         const customAmount = row.querySelector('.ing-custom').value.trim();
+        const unit = row.querySelector('.ing-unit').value;
         if (name || customAmount) {
-          ingredients.push({ group, kind, name, amount, unit, customAmount });
+          ingredients.push({ group, kind, name, amount, customAmount, unit });
         }
       });
 
@@ -1354,11 +1527,12 @@
     });
 
     document.getElementById('btnAutoFillMonth').addEventListener('click', autoFillMonthMeals);
-    document.getElementById('btnReflectShopping').addEventListener('click', reflectMealsToShopping);
+    document.getElementById('btnReflectWeekShopping').addEventListener('click', reflectActiveWeekToShopping);
 
     document.getElementById('btnClearMeals').addEventListener('click', () => {
       if (!confirm('献立をすべてクリアしますか？')) return;
       state.meals = {};
+      state.reflectedWeek = null;
       state.reflectedMealKeys = [];
       saveLocalState();
       renderMeals();
@@ -1370,7 +1544,7 @@
       const kindSel = document.getElementById('customShopKind');
       const val = input.value.trim();
       if (!val) return;
-      state.customShopping.push({ name: val, kind: kindSel.value || '調味料・その他' });
+      state.customShopping.push({ name: val, kind: kindSel.value || 'その他' });
       input.value = '';
       saveLocalState();
       renderShopping();
@@ -1435,6 +1609,7 @@
       saveToCloud(true);
     });
 
+    initCustomShopKindOptions();
     syncSettingsInputs();
     renderRecipes();
     renderMeals();
