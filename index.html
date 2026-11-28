@@ -61,7 +61,7 @@
 
     button, input, select, textarea {
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: 0.92rem;
     }
 
     button {
@@ -136,7 +136,7 @@
 
     input[type="text"], input[type="url"], select, textarea {
       width: 100%;
-      padding: 10px 12px;
+      padding: 9px 10px;
       border: 1px solid var(--line);
       border-radius: 10px;
       background: #fff;
@@ -223,15 +223,20 @@
 
     .ing-row {
       display: grid;
-      grid-template-columns: 68px 94px 1.3fr 104px 92px auto;
+      grid-template-columns: 56px 86px 1.25fr 92px 86px 110px auto;
       gap: 6px;
       margin-bottom: 8px;
       align-items: center;
     }
 
-    @media (max-width: 720px) {
-      .ing-row { grid-template-columns: 64px 92px 1fr auto; }
-      .ing-amount, .ing-custom { grid-column: span 2; }
+    .ing-custom.active-custom {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    @media (max-width: 780px) {
+      .ing-row { grid-template-columns: 54px 82px 1fr auto; }
+      .ing-amount, .ing-unit, .ing-custom { grid-column: span 2; }
     }
 
     .meal-grid { display: grid; gap: 10px; }
@@ -328,7 +333,7 @@
     .modal {
       background: var(--surface);
       border-radius: var(--radius);
-      max-width: 680px;
+      max-width: 760px;
       width: 100%;
       max-height: 88vh;
       overflow-y: auto;
@@ -508,7 +513,7 @@
           </select>
         </div>
         <div class="field">
-          <label>材料（グループ「〇」「A」・食材区分「肉・魚・野菜」・分数・カスタム分量）</label>
+          <label>材料（グループ「〇」「A」・区分・数量・単位・カスタム入力）</label>
           <div id="ingredientsContainer"></div>
           <button type="button" class="btn-secondary" id="btnAddIngredient">+ 材料行を追加</button>
         </div>
@@ -540,14 +545,19 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v3';
+    const STORAGE_KEY = 'uchino_recipe_app_state_v4';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
     const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
     const FOOD_KINDS = ['肉', '魚', '野菜', '調味料・その他'];
     const AMOUNT_OPTIONS = [
       '', '1/8', '1/6', '1/4', '1/3', '1/2', '2/3', '3/4',
-      '1', '1.5', '2', '3', '適量', '少々', 'カスタム'
+      '1', '1.5', '2', '3', '4', '5', '適量', '少々', 'カスタム'
+    ];
+    const UNIT_OPTIONS = [
+      '', 'g', 'mg', 'kg', 'ml', 'L', '大さじ', '小さじ',
+      '個', '枚', '玉', '本', '片', '株', '束', '缶',
+      '袋', 'パック', 'カップ', '合', 'かけ', '切れ', '尾', '房'
     ];
 
     const SEED_DATA = {
@@ -560,10 +570,10 @@
           title: '鶏もも肉のねぎ塩レンジ蒸し',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '肉', name: '鶏もも肉', amount: 'カスタム', customAmount: '300g' },
-            { group: 'A', kind: '野菜', name: '長ねぎ', amount: '1/2', customAmount: '' },
-            { group: 'A', kind: '調味料・その他', name: 'ごま油', amount: '1', customAmount: '大さじ1' },
-            { group: 'A', kind: '調味料・その他', name: '鶏がらスープの素', amount: '1', customAmount: '小さじ1' }
+            { group: '', kind: '肉', name: '鶏もも肉', amount: 'カスタム', unit: 'g', customAmount: '300g' },
+            { group: 'A', kind: '野菜', name: '長ねぎ', amount: '1/2', unit: '本', customAmount: '' },
+            { group: 'A', kind: '調味料・その他', name: 'ごま油', amount: '1', unit: '大さじ', customAmount: '' },
+            { group: 'A', kind: '調味料・その他', name: '鶏がらスープの素', amount: '1', unit: '小さじ', customAmount: '' }
           ],
           steps: '1. 鶏もも肉にAをかけ、電子レンジ（600W）で約5〜6分加熱する。',
           memo: '',
@@ -574,10 +584,10 @@
           title: '豚こま切れ肉とキャベツの味噌バター炒め',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '肉', name: '豚こま切れ肉', amount: 'カスタム', customAmount: '250g' },
-            { group: '', kind: '野菜', name: 'キャベツ', amount: '1/4', customAmount: '' },
-            { group: '〇', kind: '調味料・その他', name: '味噌', amount: '1', customAmount: '大さじ1' },
-            { group: '', kind: '調味料・その他', name: 'バター', amount: '1', customAmount: '10g' }
+            { group: '', kind: '肉', name: '豚こま切れ肉', amount: 'カスタム', unit: 'g', customAmount: '250g' },
+            { group: '', kind: '野菜', name: 'キャベツ', amount: '1/4', unit: '玉', customAmount: '' },
+            { group: '〇', kind: '調味料・その他', name: '味噌', amount: '1', unit: '大さじ', customAmount: '' },
+            { group: '', kind: '調味料・その他', name: 'バター', amount: '1', unit: 'かけ', customAmount: '10g' }
           ],
           steps: '1. 豚肉とキャベツを炒め、味噌とバターを絡める。',
           memo: '',
@@ -588,9 +598,9 @@
           title: 'さば缶とトマトのチーズ焼き',
           category: '主菜',
           ingredients: [
-            { group: '', kind: '魚', name: 'さば水煮缶', amount: '1', customAmount: '1缶' },
-            { group: '', kind: '野菜', name: 'トマト', amount: '1/2', customAmount: '' },
-            { group: '', kind: '調味料・その他', name: 'ピザ用チーズ', amount: 'カスタム', customAmount: '60g' }
+            { group: '', kind: '魚', name: 'さば水煮缶', amount: '1', unit: '缶', customAmount: '' },
+            { group: '', kind: '野菜', name: 'トマト', amount: '1/2', unit: '個', customAmount: '' },
+            { group: '', kind: '調味料・その他', name: 'ピザ用チーズ', amount: 'カスタム', unit: 'g', customAmount: '60g' }
           ],
           steps: '1. 耐熱皿にさばとトマトを入れてチーズをのせ、焼く。',
           memo: '',
@@ -601,9 +611,9 @@
           title: 'ブロッコリーとベーコンのガーリック炒め',
           category: '副菜',
           ingredients: [
-            { group: '', kind: '野菜', name: 'ブロッコリー', amount: '1/2', customAmount: '' },
-            { group: '', kind: '肉', name: 'ハーフベーコン', amount: 'カスタム', customAmount: '4枚' },
-            { group: '', kind: '野菜', name: 'にんにく', amount: '1/2', customAmount: '1片' }
+            { group: '', kind: '野菜', name: 'ブロッコリー', amount: '1/2', unit: '株', customAmount: '' },
+            { group: '', kind: '肉', name: 'ハーフベーコン', amount: '4', unit: '枚', customAmount: '' },
+            { group: '', kind: '野菜', name: 'にんにく', amount: '1/2', unit: '片', customAmount: '' }
           ],
           steps: '1. ブロッコリーとベーコンをにんにくと炒める。',
           memo: '',
@@ -643,6 +653,7 @@
               kind: guessFoodKind(ing.name, ing.kind || ing.foodType || ing.category),
               name: ing.name || '',
               amount: ing.amount !== undefined ? String(ing.amount) : '',
+              unit: ing.unit || '',
               customAmount: ing.customAmount || ''
             }))
           : [],
@@ -712,9 +723,16 @@
     }
 
     function formatIngredientAmount(ing) {
-      if (ing.amount === 'カスタム') return ing.customAmount || '';
-      if (ing.amount && ing.customAmount) return `${ing.amount}（${ing.customAmount}）`;
-      return ing.amount || ing.customAmount || '';
+      if (ing.amount === 'カスタム') {
+        return ing.customAmount || '';
+      }
+      const amtPart = ing.amount || '';
+      const unitPart = ing.unit || '';
+      const base = `${amtPart}${unitPart}`;
+      if (ing.customAmount) {
+        return base ? `${base}（${ing.customAmount}）` : ing.customAmount;
+      }
+      return base;
     }
 
     function renderRecipes() {
@@ -819,7 +837,7 @@
       container.innerHTML = '';
       const rows = isEdit && Array.isArray(recipe.ingredients) && recipe.ingredients.length > 0
         ? recipe.ingredients
-        : [{ group: '', kind: '野菜', name: '', amount: '1', customAmount: '' }];
+        : [{ group: '', kind: '野菜', name: '', amount: '1', unit: '個', customAmount: '' }];
       rows.forEach((row) => addIngredientRow(row));
 
       document.getElementById('formModal').classList.add('open');
@@ -833,7 +851,8 @@
       const groupVal = data.group || '';
       const kindVal = guessFoodKind(data.name, data.kind);
       const nameVal = data.name || '';
-      const amountVal = data.amount !== undefined ? data.amount : '1';
+      const amountVal = data.amount !== undefined ? String(data.amount) : '1';
+      const unitVal = data.unit || '';
       const customVal = data.customAmount || '';
 
       const kindOptionsHtml = FOOD_KINDS.map(
@@ -841,21 +860,38 @@
       ).join('');
 
       const amountOptionsHtml = AMOUNT_OPTIONS.map(
-        (opt) => `<option value="${escapeAttr(opt)}" ${opt === amountVal ? 'selected' : ''}>${opt || '分量'}</option>`
+        (opt) => `<option value="${escapeAttr(opt)}" ${opt === amountVal ? 'selected' : ''}>${opt || '数量'}</option>`
+      ).join('');
+
+      const unitOptionsHtml = UNIT_OPTIONS.map(
+        (u) => `<option value="${escapeAttr(u)}" ${u === unitVal ? 'selected' : ''}>${u || '単位'}</option>`
       ).join('');
 
       div.innerHTML = `
         <select class="ing-group" title="グループ接頭辞">
-          <option value="" ${groupVal === '' ? 'selected' : ''}>なし</option>
+          <option value="" ${groupVal === '' ? 'selected' : ''}>－</option>
           <option value="〇" ${groupVal === '〇' ? 'selected' : ''}>〇</option>
           <option value="A" ${groupVal === 'A' ? 'selected' : ''}>A</option>
         </select>
         <select class="ing-kind" title="食材区分">${kindOptionsHtml}</select>
         <input type="text" class="ing-name" placeholder="材料名" value="${escapeAttr(nameVal)}" />
-        <select class="ing-amount">${amountOptionsHtml}</select>
-        <input type="text" class="ing-custom" placeholder="詳細/カスタム" value="${escapeAttr(customVal)}" />
+        <select class="ing-amount" title="数量">${amountOptionsHtml}</select>
+        <select class="ing-unit" title="単位">${unitOptionsHtml}</select>
+        <input type="text" class="ing-custom ${amountVal === 'カスタム' ? 'active-custom' : ''}" placeholder="カスタム入力" value="${escapeAttr(customVal)}" />
         <button type="button" class="btn-danger btn-remove-ing" title="行を削除">×</button>
       `;
+
+      const amountSelect = div.querySelector('.ing-amount');
+      const customInput = div.querySelector('.ing-custom');
+
+      amountSelect.addEventListener('change', () => {
+        if (amountSelect.value === 'カスタム') {
+          customInput.classList.add('active-custom');
+          customInput.focus();
+        } else {
+          customInput.classList.remove('active-custom');
+        }
+      });
 
       div.querySelector('.btn-remove-ing').addEventListener('click', () => div.remove());
       container.appendChild(div);
@@ -1287,9 +1323,10 @@
         const group = row.querySelector('.ing-group').value;
         const kind = row.querySelector('.ing-kind').value;
         const amount = row.querySelector('.ing-amount').value;
+        const unit = row.querySelector('.ing-unit').value;
         const customAmount = row.querySelector('.ing-custom').value.trim();
         if (name || customAmount) {
-          ingredients.push({ group, kind, name, amount, customAmount });
+          ingredients.push({ group, kind, name, amount, unit, customAmount });
         }
       });
 
