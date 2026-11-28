@@ -542,12 +542,12 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v6';
+    const STORAGE_KEY = 'uchino_recipe_app_state_v7';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
     const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
 
-    // 買い物リストの区分順（その他＝食材、調味料＝調味料・油・だしなど）
+    // 買い物リストの区分順（その他＝梅干し・板こんにゃく等、調味料＝醤油・水・バター等）
     const SHOP_KINDS = [
       '果物',
       '野菜',
@@ -562,7 +562,7 @@
       '調味料'
     ];
 
-    // 数量ドロップダウン（分数・よく使う数字・カスタム）
+    // 数量ドロップダウン
     const AMOUNT_OPTIONS = [
       '', '1/8', '1/6', '1/4', '1/3', '1/2', '2/3', '3/4',
       '1', '1.5', '2', '2.5', '3', '4', '5', '6', '8', '10',
@@ -652,17 +652,32 @@
     let currentDetailId = null;
     let isSavingCloud = false;
 
-    function guessShopKind(name, rawKind) {
-      if (rawKind && SHOP_KINDS.includes(rawKind)) return rawKind;
-      const n = String(name || '');
+    // null / undefined / "null" / "undefined" を安全な空文字に正規化
+    function cleanStr(val) {
+      if (val === null || val === undefined) return '';
+      const s = String(val).trim();
+      if (!s || s.toLowerCase() === 'null' || s.toLowerCase() === 'undefined') return '';
+      return s;
+    }
 
-      // 調味料を優先判定（水・醤油・バター・みりん・酒・味噌・油・だし・塩・砂糖・酢など）
-      if (/醤油|しょうゆ|みりん|酒|味噌|みそ|塩|砂糖|酢|油|オイル|だし|出汁|スープの素|コンソメ|めんつゆ|つゆ|マヨネーズ|ケチャップ|ソース|わさび|からし|マスタード|こしょう|コショウ|胡椒|水|湯|バター/.test(n)) {
+    function guessShopKind(name, rawKind) {
+      const n = cleanStr(name);
+      const rk = cleanStr(rawKind);
+
+      // 豆腐・納豆・厚揚げ・油揚げ・がんもは先に判定（「油揚げ」が「油」で調味料に行かないようにする）
+      if (/豆腐|納豆|厚揚げ|油揚げ|がんも/.test(n)) return '豆腐や納豆';
+
+      // 調味料判定（既存の「その他」からも調味料を救済できるよう、rk が「その他」や未指定のときは自動判定を優先）
+      if (/醤油|しょうゆ|みりん|酒|味噌|みそ|塩|砂糖|酢|油|オイル|だし|出汁|スープの素|コンソメ|めんつゆ|つゆ|マヨネーズ|ケチャップ|ソース|わさび|からし|マスタード|こしょう|コショウ|胡椒|水|湯|バター|片栗粉|小麦粉|薄力粉|強力粉|パン粉|塩こうじ|塩麹|おろしにんにく|おろししょうが|チューブ|塩昆布|白だし|ポン酢|ごま|いりごま|すりごま/.test(n)) {
         return '調味料';
       }
+
+      if (rk && SHOP_KINDS.includes(rk) && rk !== 'その他') {
+        return rk;
+      }
+
       if (/冷凍/.test(n)) return '冷凍';
       if (/りんご|バナナ|みかん|いちご|ぶどう|桃|梨|キウイ|レモン|果物|フルーツ/.test(n)) return '果物';
-      if (/豆腐|納豆|厚揚げ|油揚げ|がんも/.test(n)) return '豆腐や納豆';
       if (/ソーセージ|ウインナー|ハム|ベーコン/.test(n)) return 'ソーセージ類';
       if (/卵|たまご|玉子/.test(n)) return '卵';
       if (/牛乳|ミルク|ヨーグルト|チーズ|生クリーム|乳製品/.test(n)) return '牛乳などの乳製品';
@@ -670,30 +685,32 @@
       if (/魚|さば|鯖|鮭|サーモン|いわし|あじ|ぶり|鯛|えび|いか|たこ/.test(n)) return '魚';
       if (/ねぎ|葱|キャベツ|トマト|ブロッコリー|にんにく|玉ねぎ|人参|にんじん|じゃがいも|大根|ほうれん草|ピーマン|レタス|きのこ|しめじ|えのき|野菜/.test(n)) return '野菜';
 
-      // 旧「調味料・その他」は調味料寄りのもの以外を「その他（梅干し・板こんにゃく等の食材）」へ
-      if (rawKind === '調味料・その他') return 'その他';
       return 'その他';
     }
 
     function normalizeRecipes(list) {
       if (!Array.isArray(list)) return [];
       return list.map((r, idx) => ({
-        id: r.id || `rec_${idx + 1}`,
-        title: r.title || '無題のレシピ',
-        category: r.category || '主菜',
+        id: cleanStr(r.id) || `rec_${idx + 1}`,
+        title: cleanStr(r.title) || '無題のレシピ',
+        category: cleanStr(r.category) || '主菜',
         ingredients: Array.isArray(r.ingredients)
-          ? r.ingredients.map((ing) => ({
-              group: ing.group || '',
-              kind: guessShopKind(ing.name, ing.kind || ing.foodType || ing.category),
-              name: ing.name || '',
-              amount: ing.amount !== undefined ? String(ing.amount) : '',
-              customAmount: ing.customAmount || '',
-              unit: ing.unit || ''
-            }))
+          ? r.ingredients.map((ing) => {
+              const name = cleanStr(ing.name);
+              const rawKind = cleanStr(ing.kind || ing.foodType || ing.category);
+              return {
+                group: cleanStr(ing.group),
+                kind: guessShopKind(name, rawKind),
+                name,
+                amount: cleanStr(ing.amount),
+                customAmount: cleanStr(ing.customAmount),
+                unit: cleanStr(ing.unit)
+              };
+            })
           : [],
-        steps: r.steps || '',
-        memo: r.memo || '',
-        url: r.url || ''
+        steps: cleanStr(r.steps),
+        memo: cleanStr(r.memo),
+        url: cleanStr(r.url)
       }));
     }
 
@@ -703,11 +720,9 @@
         if (!raw) return structuredClone(SEED_DATA);
         const parsed = JSON.parse(raw);
         return {
-          gasUrl: typeof parsed.gasUrl === 'string' ? parsed.gasUrl : '',
-          shareKey: typeof parsed.shareKey === 'string' && parsed.shareKey.trim()
-            ? parsed.shareKey.trim()
-            : DEFAULT_SHARE_KEY,
-          updatedAt: parsed.updatedAt || '',
+          gasUrl: cleanStr(parsed.gasUrl),
+          shareKey: cleanStr(parsed.shareKey) || DEFAULT_SHARE_KEY,
+          updatedAt: cleanStr(parsed.updatedAt),
           recipes: Array.isArray(parsed.recipes) && parsed.recipes.length > 0
             ? normalizeRecipes(parsed.recipes)
             : structuredClone(SEED_DATA.recipes),
@@ -715,11 +730,11 @@
           reflectedWeek: parsed.reflectedWeek || null,
           reflectedMealKeys: Array.isArray(parsed.reflectedMealKeys) ? parsed.reflectedMealKeys : [],
           customShopping: Array.isArray(parsed.customShopping)
-            ? parsed.customShopping.map((c) =>
-                typeof c === 'string'
-                  ? { name: c, kind: guessShopKind(c, '') }
-                  : { name: c.name || '', kind: guessShopKind(c.name, c.kind) }
-              )
+            ? parsed.customShopping.map((c) => {
+                const cname = typeof c === 'string' ? cleanStr(c) : cleanStr(c && c.name);
+                const ckind = typeof c === 'string' ? '' : cleanStr(c && c.kind);
+                return { name: cname, kind: guessShopKind(cname, ckind) };
+              }).filter((x) => x.name)
             : [],
           checkedShopping: parsed.checkedShopping && typeof parsed.checkedShopping === 'object'
             ? parsed.checkedShopping
@@ -757,7 +772,7 @@
       });
     }
 
-    // 分数・小数・整数のパース＆足し算（最大公約数で約分）
+    // 最大公約数（約分用）
     function gcd(a, b) {
       let x = Math.abs(Math.round(a));
       let y = Math.abs(Math.round(b));
@@ -769,21 +784,65 @@
       return x || 1;
     }
 
+    // 料理でよく使う分数にスナップし、丸め誤差（4999/10000 や 5/10 など）を防ぐ
+    const COMMON_FRACTIONS = [
+      { num: 1, den: 8, val: 1 / 8 },
+      { num: 1, den: 6, val: 1 / 6 },
+      { num: 1, den: 4, val: 1 / 4 },
+      { num: 1, den: 3, val: 1 / 3 },
+      { num: 1, den: 2, val: 1 / 2 },
+      { num: 2, den: 3, val: 2 / 3 },
+      { num: 3, den: 4, val: 3 / 4 }
+    ];
+
+    function snapFraction(frac) {
+      if (!frac || !frac.den) return null;
+      const g = gcd(frac.num, frac.den);
+      let num = frac.num / g;
+      let den = frac.den / g;
+
+      const whole = Math.floor(num / den);
+      const remNum = num % den;
+      if (remNum === 0) {
+        return { num: whole, den: 1 };
+      }
+
+      const remVal = remNum / den;
+      for (const cf of COMMON_FRACTIONS) {
+        if (Math.abs(remVal - cf.val) < 0.015) {
+          const totalNum = whole * cf.den + cf.num;
+          const tg = gcd(totalNum, cf.den);
+          return { num: totalNum / tg, den: cf.den / tg };
+        }
+      }
+
+      // 分母が大きすぎる小数の場合は、小数第1〜2位相当の分数に丸める
+      if (den > 24) {
+        const roundedVal = Math.round((num / den) * 100) / 100;
+        const rNum = Math.round(roundedVal * 100);
+        const rDen = 100;
+        const rg = gcd(rNum, rDen);
+        return { num: rNum / rg, den: rDen / rg };
+      }
+
+      return { num, den };
+    }
+
     function parseNumberTokenToFraction(token) {
-      const s = String(token || '').trim();
+      const s = cleanStr(token);
       if (!s) return null;
       if (/^\d+\/\d+$/.test(s)) {
         const [numStr, denStr] = s.split('/');
         const num = Number(numStr);
         const den = Number(denStr);
         if (!den) return null;
-        return { num, den };
+        return snapFraction({ num, den });
       }
       if (/^\d+(\.\d+)?$/.test(s)) {
         const val = Number(s);
         const parts = s.split('.');
         const scale = parts[1] ? Math.pow(10, parts[1].length) : 1;
-        return { num: Math.round(val * scale), den: scale };
+        return snapFraction({ num: Math.round(val * scale), den: scale });
       }
       return null;
     }
@@ -791,37 +850,38 @@
     function addFractions(f1, f2) {
       const num = f1.num * f2.den + f2.num * f1.den;
       const den = f1.den * f2.den;
-      const g = gcd(num, den);
-      return { num: num / g, den: den / g };
+      return snapFraction({ num, den });
     }
 
+    // 1以上の分数は「1と1/2」のように「と」でつないで表示
     function formatFraction(frac) {
-      if (!frac || frac.den === 0) return '';
-      if (frac.num === 0) return '0';
-      if (frac.num % frac.den === 0) {
-        return String(frac.num / frac.den);
+      const clean = snapFraction(frac);
+      if (!clean || clean.den === 0) return '';
+      if (clean.num === 0) return '0';
+      if (clean.num % clean.den === 0) {
+        return String(clean.num / clean.den);
       }
-      if (frac.num > frac.den) {
-        const whole = Math.floor(frac.num / frac.den);
-        const rem = frac.num % frac.den;
-        return `${whole} ${rem}/${frac.den}`;
+      if (clean.num > clean.den) {
+        const whole = Math.floor(clean.num / clean.den);
+        const rem = clean.num % clean.den;
+        return `${whole}と${rem}/${clean.den}`;
       }
-      return `${frac.num}/${frac.den}`;
+      return `${clean.num}/${clean.den}`;
     }
 
     function extractQuantityInfo(ing) {
-      const rawAmount = ing.amount !== undefined ? String(ing.amount).trim() : '';
-      const rawCustom = ing.customAmount !== undefined ? String(ing.customAmount).trim() : '';
-      const rawUnit = ing.unit !== undefined ? String(ing.unit).trim() : '';
+      const rawAmount = cleanStr(ing.amount);
+      const rawCustom = cleanStr(ing.customAmount);
+      const rawUnit = cleanStr(ing.unit);
 
       if (rawAmount === 'カスタム') {
         if (!rawCustom) {
-          return { kind: 'text', text: rawUnit ? rawUnit : '', unit: rawUnit };
+          return { kind: 'text', text: rawUnit, unit: rawUnit };
         }
         const match = rawCustom.match(/^(\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/);
         if (match) {
           const frac = parseNumberTokenToFraction(match[1]);
-          const unit = (match[2] || rawUnit || '').trim();
+          const unit = cleanStr(match[2]) || rawUnit;
           if (frac) {
             return { kind: 'qty', frac, unit };
           }
@@ -967,12 +1027,12 @@
       const div = document.createElement('div');
       div.className = 'ing-row';
 
-      const groupVal = data.group || '';
-      const kindVal = guessShopKind(data.name, data.kind);
-      const nameVal = data.name || '';
-      const amountVal = data.amount !== undefined ? String(data.amount) : '1';
-      const customVal = data.customAmount || '';
-      const unitVal = data.unit || '';
+      const groupVal = cleanStr(data.group);
+      const nameVal = cleanStr(data.name);
+      const kindVal = guessShopKind(nameVal, cleanStr(data.kind));
+      const amountVal = cleanStr(data.amount) || '1';
+      const customVal = cleanStr(data.customAmount);
+      const unitVal = cleanStr(data.unit);
 
       const kindOptionsHtml = SHOP_KINDS.map(
         (k) => `<option value="${escapeAttr(k)}" ${k === kindVal ? 'selected' : ''}>${escapeHtml(k)}</option>`
@@ -1138,7 +1198,7 @@
       });
 
       function addIngredientToBucket(kind, rawName, ing) {
-        const name = String(rawName || '').trim();
+        const name = cleanStr(rawName);
         if (!name) return;
         const targetKind = guessShopKind(name, kind);
         const map = kindMap[targetKind];
@@ -1298,16 +1358,16 @@
       if (payload.reflectedWeek) state.reflectedWeek = payload.reflectedWeek;
       if (Array.isArray(payload.reflectedMealKeys)) state.reflectedMealKeys = payload.reflectedMealKeys;
       if (Array.isArray(payload.customShopping)) {
-        state.customShopping = payload.customShopping.map((c) =>
-          typeof c === 'string'
-            ? { name: c, kind: guessShopKind(c, '') }
-            : { name: c.name || '', kind: guessShopKind(c.name, c.kind) }
-        );
+        state.customShopping = payload.customShopping.map((c) => {
+          const cname = typeof c === 'string' ? cleanStr(c) : cleanStr(c && c.name);
+          const ckind = typeof c === 'string' ? '' : cleanStr(c && c.kind);
+          return { name: cname, kind: guessShopKind(cname, ckind) };
+        }).filter((x) => x.name);
       }
       if (payload.checkedShopping && typeof payload.checkedShopping === 'object') {
         state.checkedShopping = payload.checkedShopping;
       }
-      if (updatedAt) state.updatedAt = updatedAt;
+      if (updatedAt) state.updatedAt = cleanStr(updatedAt);
       saveLocalState();
       renderRecipes();
       renderMeals();
@@ -1489,31 +1549,31 @@
 
     document.getElementById('recipeForm').addEventListener('submit', (e) => {
       e.preventDefault();
-      const title = document.getElementById('recipeTitleInput').value.trim();
+      const title = cleanStr(document.getElementById('recipeTitleInput').value);
       if (!title) return;
 
       const ingredients = [];
       document.querySelectorAll('#ingredientsContainer .ing-row').forEach((row) => {
-        const name = row.querySelector('.ing-name').value.trim();
-        const group = row.querySelector('.ing-group').value;
-        const kind = row.querySelector('.ing-kind').value;
-        const amount = row.querySelector('.ing-amount').value;
-        const customAmount = row.querySelector('.ing-custom').value.trim();
-        const unit = row.querySelector('.ing-unit').value;
+        const name = cleanStr(row.querySelector('.ing-name').value);
+        const group = cleanStr(row.querySelector('.ing-group').value);
+        const kind = cleanStr(row.querySelector('.ing-kind').value);
+        const amount = cleanStr(row.querySelector('.ing-amount').value);
+        const customAmount = cleanStr(row.querySelector('.ing-custom').value);
+        const unit = cleanStr(row.querySelector('.ing-unit').value);
         if (name || customAmount) {
           ingredients.push({ group, kind, name, amount, customAmount, unit });
         }
       });
 
-      const editId = document.getElementById('editRecipeId').value;
+      const editId = cleanStr(document.getElementById('editRecipeId').value);
       const payload = {
         id: editId || `rec_${Date.now()}`,
         title,
-        category: document.getElementById('recipeCategoryInput').value,
+        category: cleanStr(document.getElementById('recipeCategoryInput').value) || '主菜',
         ingredients,
-        steps: document.getElementById('recipeStepsInput').value.trim(),
-        memo: document.getElementById('recipeMemoInput').value.trim(),
-        url: document.getElementById('recipeUrlInput').value.trim()
+        steps: cleanStr(document.getElementById('recipeStepsInput').value),
+        memo: cleanStr(document.getElementById('recipeMemoInput').value),
+        url: cleanStr(document.getElementById('recipeUrlInput').value)
       };
 
       if (editId) {
@@ -1544,7 +1604,7 @@
     document.getElementById('btnAddCustomShop').addEventListener('click', () => {
       const input = document.getElementById('customShopInput');
       const kindSel = document.getElementById('customShopKind');
-      const val = input.value.trim();
+      const val = cleanStr(input.value);
       if (!val) return;
       state.customShopping.push({ name: val, kind: kindSel.value || 'その他' });
       input.value = '';
