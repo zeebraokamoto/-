@@ -130,7 +130,31 @@
   }
   .step-text { white-space: pre-wrap; font-size: 17px; line-height: 1.7; }
 
-  .menu-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  /* 献立・隔週/週別選択UI */
+  .menu-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .week-option {
+    display: flex; align-items: center; gap: 12px;
+    background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 10px; cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .week-option.selected {
+    border-color: #1971c2; background: #f4f9ff;
+  }
+  .week-radio {
+    width: 22px; height: 22px; accent-color: #1971c2; margin: 0; flex-shrink: 0;
+  }
+  .week-label-main { font-size: 17px; font-weight: 700; color: var(--text); }
+  .week-label-sub { font-size: 13px; color: var(--sub); margin-left: auto; }
+  .toggle-month-btn {
+    width: 100%; background: #fff; border: 1.5px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; font-size: 16px; font-weight: 700; color: var(--text);
+    display: flex; align-items: center; justify-content: space-between; cursor: pointer;
+    margin: 12px 0 18px;
+  }
+  .section-heading {
+    font-size: 20px; font-weight: 700; margin: 18px 0 10px; color: var(--text);
+  }
   .day-card {
     background: #fff; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
     border: 1.5px solid var(--border);
@@ -249,25 +273,43 @@
 
   <section id="view-menu" class="hidden">
     <div class="card">
-      <div style="font-weight:700; margin-bottom:10px; font-size:18px;">📅 献立プラン作成</div>
+      <div style="font-weight:700; margin-bottom:10px; font-size:18px;">📅 1か月の献立・週別買い出し</div>
       <div class="menu-controls">
-        <input type="month" id="menuMonth" style="flex:1; min-width:150px;" onchange="renderMenu()">
-        <button class="btn btn-sm" onclick="autoGenerateMenu()">✨ 自動作成</button>
-        <button class="btn btn-ok btn-sm" onclick="buildShoppingFromMenu()">🛒 買い物作成</button>
+        <input type="month" id="menuMonth" style="flex:1; min-width:150px;" onchange="onMonthChange()">
+        <button class="btn btn-sm" onclick="autoGenerateMenu()">✨ 1か月分を作成</button>
       </div>
       <div style="font-size:14px; color:var(--sub);">
-        ※献立を変更したら右上の「☁️ 共有保存」を押すとパートナーの画面にも反映されます。
+        買い出しする週を1つ選んでください。週の料理は後から変更できます。
       </div>
     </div>
-    <div id="menuList"></div>
+
+    <!-- 第1週〜第6週 選択リスト -->
+    <div id="weekSelectorList"></div>
+
+    <!-- 選択した1週間分の買い物リスト作成ボタン -->
+    <button class="btn btn-ok btn-block" id="btnBuildWeekShopping" onclick="buildShoppingFromSelectedWeek()" style="margin: 8px 0 4px;">
+      🛒 選択中の週の買い物リストを作成
+    </button>
+
+    <!-- 1か月の献立を見る（開閉トグル） -->
+    <button type="button" class="toggle-month-btn" onclick="toggleFullMonthMenu()">
+      <span id="toggleMonthLabel">▶ 1か月の献立を見る</span>
+      <span style="font-size:13px; color:var(--sub);">全体表示</span>
+    </button>
+    <div id="fullMonthMenuContainer" class="hidden"></div>
+
+    <!-- 選択中の週を編集 -->
+    <div class="section-heading" id="selectedWeekHeading">選択中の週を編集</div>
+    <div id="selectedWeekMenuList"></div>
   </section>
 
   <section id="view-shopping" class="hidden">
     <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
         <span style="font-weight:700; font-size:18px;">🛒 買い物リスト</span>
         <button class="btn btn-sub btn-sm" onclick="clearCheckedShopping()">チェック済みを消す</button>
       </div>
+      <div id="shoppingScopeLabel" style="font-size:14px; color:var(--primary-dark); font-weight:700; margin-bottom:10px;"></div>
       <div style="display:flex; gap:8px;">
         <input type="text" id="extraShopName" placeholder="追加する品物（例：ティッシュ）" style="flex:2;">
         <select id="extraShopCat" style="flex:1;"></select>
@@ -437,10 +479,13 @@ let state = {
   recipes: [],
   menus: {},
   shopping: [],
+  shoppingLabel: "",
   updatedAt: null
 };
 
 let currentTypeFilter = "ALL";
+let selectedWeekIndex = 0; // 0 = 第1週, 1 = 第2週 ...
+let showFullMonth = false;
 let pickTarget = { dateStr: "", slot: "" };
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -454,6 +499,12 @@ window.addEventListener("DOMContentLoaded", () => {
   const now = new Date();
   const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   document.getElementById("menuMonth").value = ym;
+
+  // 今日の日付が含まれる週を初期選択
+  const weeks = getMonthWeeks(ym);
+  const todayStr = `${ym}-${String(now.getDate()).padStart(2, "0")}`;
+  const foundIdx = weeks.findIndex(w => w.days.some(d => d.dateStr === todayStr));
+  selectedWeekIndex = foundIdx >= 0 ? foundIdx : 0;
 
   const savedUrl = localStorage.getItem("uchino_gas_url") || DEFAULT_GAS_URL;
   const savedKey = localStorage.getItem("uchino_share_key") || DEFAULT_SHARE_KEY;
@@ -825,53 +876,155 @@ function saveRecipeForm() {
   renderRecipes();
 }
 
-function renderMenu() {
-  const ym = document.getElementById("menuMonth").value;
-  if (!ym) return;
+// 月を月曜〜日曜の週（第1週〜最大第6週）に分割する
+function getMonthWeeks(ym) {
+  if (!ym) return [];
   const [y, m] = ym.split("-").map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
   const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
 
-  if (!state.menus[ym]) state.menus[ym] = {};
-  const monthData = state.menus[ym];
-
-  const container = document.getElementById("menuList");
-  container.innerHTML = "";
+  const weeks = [];
+  let currentDays = [];
 
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(y, m - 1, d);
-    const dow = dateObj.getDay();
+    const dow = dateObj.getDay(); // 0=日, 1=月 ... 6=土
     const dateStr = `${ym}-${String(d).padStart(2, "0")}`;
-    const dayPlan = monthData[dateStr] || { main: "", side: "", memo: "" };
+    currentDays.push({
+      day: d,
+      month: m,
+      dow,
+      dowName: weekNames[dow],
+      dateStr
+    });
+    // 日曜日（dow === 0）または月末で1週を区切る
+    if (dow === 0 || d === daysInMonth) {
+      const first = currentDays[0];
+      const last = currentDays[currentDays.length - 1];
+      const rangeText = first.day === last.day
+        ? `${m}/${first.day}(${first.dowName})`
+        : `${m}/${first.day}(${first.dowName})〜${m}/${last.day}(${last.dowName})`;
+      weeks.push({
+        weekNum: weeks.length + 1,
+        label: `第${weeks.length + 1}週を買い出し`,
+        shortLabel: `第${weeks.length + 1}週`,
+        rangeText,
+        days: currentDays
+      });
+      currentDays = [];
+    }
+  }
+  return weeks;
+}
 
-    const mainR = state.recipes.find(r => r.id === dayPlan.main);
-    const sideR = state.recipes.find(r => r.id === dayPlan.side);
+function onMonthChange() {
+  selectedWeekIndex = 0;
+  renderMenu();
+}
 
-    const card = document.createElement("div");
-    card.className = "day-card" + (dow === 6 ? " sat" : dow === 0 ? " sun" : "");
-    card.innerHTML = `
-      <div class="day-head">
-        <span>${m}月${d}日（${weekNames[dow]}）</span>
-        <input type="text" placeholder="メモ（外食・残り物など）" value="${escapeHtml(dayPlan.memo || "")}"
-          style="width:55%; padding:6px 10px; font-size:14px;"
-          onchange="updateMenuMemo('${ym}', '${dateStr}', this.value)">
-      </div>
-      <div class="meal-row">
-        <span class="meal-tag main">主菜</span>
-        <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${mainR ? '700' : '400'};"
-          onclick="openPickModal('${dateStr}', 'main')">
-          ${mainR ? escapeHtml(mainR.title) : "＋ 主菜を選ぶ"}
-        </button>
-      </div>
-      <div class="meal-row">
-        <span class="meal-tag side">副菜</span>
-        <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${sideR ? '700' : '400'};"
-          onclick="openPickModal('${dateStr}', 'side')">
-          ${sideR ? escapeHtml(sideR.title) : "＋ 副菜を選ぶ"}
-        </button>
-      </div>
+function selectWeek(idx) {
+  selectedWeekIndex = idx;
+  renderMenu();
+}
+
+function toggleFullMonthMenu() {
+  showFullMonth = !showFullMonth;
+  renderMenu();
+}
+
+function createDayCardHtml(ym, dayInfo, monthData) {
+  const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+  const { month, day, dow, dateStr } = dayInfo;
+  const dayPlan = monthData[dateStr] || { main: "", side: "", memo: "" };
+  const mainR = state.recipes.find(r => r.id === dayPlan.main);
+  const sideR = state.recipes.find(r => r.id === dayPlan.side);
+
+  const card = document.createElement("div");
+  card.className = "day-card" + (dow === 6 ? " sat" : dow === 0 ? " sun" : "");
+  card.innerHTML = `
+    <div class="day-head">
+      <span>${month}/${day}（${weekNames[dow]}）</span>
+      <input type="text" placeholder="メモ（外食・残り物など）" value="${escapeHtml(dayPlan.memo || "")}"
+        style="width:55%; padding:6px 10px; font-size:14px;"
+        onchange="updateMenuMemo('${ym}', '${dateStr}', this.value)">
+    </div>
+    <div class="meal-row">
+      <span class="meal-tag main">主菜</span>
+      <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${mainR ? '700' : '400'};"
+        onclick="openPickModal('${dateStr}', 'main')">
+        ${mainR ? escapeHtml(mainR.title) : "＋ 主菜を選ぶ"}
+      </button>
+    </div>
+    <div class="meal-row">
+      <span class="meal-tag side">副菜</span>
+      <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${sideR ? '700' : '400'};"
+        onclick="openPickModal('${dateStr}', 'side')">
+        ${sideR ? escapeHtml(sideR.title) : "＋ 副菜を選ぶ"}
+      </button>
+    </div>
+  `;
+  return card;
+}
+
+function renderMenu() {
+  const ym = document.getElementById("menuMonth").value;
+  if (!ym) return;
+
+  if (!state.menus[ym]) state.menus[ym] = {};
+  const monthData = state.menus[ym];
+  const weeks = getMonthWeeks(ym);
+
+  if (selectedWeekIndex >= weeks.length) selectedWeekIndex = 0;
+
+  // 第1週〜第6週ラジオボタンリスト
+  const weekListEl = document.getElementById("weekSelectorList");
+  weekListEl.innerHTML = "";
+  weeks.forEach((w, idx) => {
+    const isSelected = idx === selectedWeekIndex;
+    const item = document.createElement("label");
+    item.className = "week-option" + (isSelected ? " selected" : "");
+    item.onclick = () => selectWeek(idx);
+    item.innerHTML = `
+      <input type="radio" name="buyWeekRadio" class="week-radio" ${isSelected ? "checked" : ""}>
+      <span class="week-label-main">${w.label}</span>
+      <span class="week-label-sub">${w.rangeText}</span>
     `;
-    container.appendChild(card);
+    weekListEl.appendChild(item);
+  });
+
+  const activeWeek = weeks[selectedWeekIndex];
+  const buildBtn = document.getElementById("btnBuildWeekShopping");
+  if (activeWeek) {
+    buildBtn.textContent = `🛒 ${activeWeek.shortLabel}（${activeWeek.rangeText}）の買い物リスト作成`;
+  }
+
+  // 1か月の献立を見る（開閉）
+  const toggleLabel = document.getElementById("toggleMonthLabel");
+  const fullContainer = document.getElementById("fullMonthMenuContainer");
+  toggleLabel.textContent = showFullMonth ? "▼ 1か月の献立を閉じる" : "▶ 1か月の献立を見る";
+  if (showFullMonth) {
+    fullContainer.classList.remove("hidden");
+    fullContainer.innerHTML = "";
+    weeks.forEach(w => {
+      const subHead = document.createElement("div");
+      subHead.style.cssText = "font-weight:700; font-size:15px; color:var(--primary-dark); margin:12px 0 6px;";
+      subHead.textContent = `【${w.shortLabel}】 ${w.rangeText}`;
+      fullContainer.appendChild(subHead);
+      w.days.forEach(d => fullContainer.appendChild(createDayCardHtml(ym, d, monthData)));
+    });
+  } else {
+    fullContainer.classList.add("hidden");
+  }
+
+  // 選択中の週を編集
+  const headingEl = document.getElementById("selectedWeekHeading");
+  const selectedWeekContainer = document.getElementById("selectedWeekMenuList");
+  selectedWeekContainer.innerHTML = "";
+  if (activeWeek) {
+    headingEl.textContent = `選択中の週を編集（${activeWeek.shortLabel}：${activeWeek.rangeText}）`;
+    activeWeek.days.forEach(d => {
+      selectedWeekContainer.appendChild(createDayCardHtml(ym, d, monthData));
+    });
   }
 }
 
@@ -936,7 +1089,7 @@ function autoGenerateMenu() {
     alert("主菜のレシピが登録されていません。");
     return;
   }
-  if (!confirm(`${ym} の献立を自動作成しますか？（既存の選択は上書きされます）`)) return;
+  if (!confirm(`${ym} の1か月分の献立を自動作成しますか？（既存の選択は上書きされます）`)) return;
 
   const [y, m] = ym.split("-").map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
@@ -968,15 +1121,21 @@ function autoGenerateMenu() {
   }
   saveLocal();
   renderMenu();
-  alert("献立を自動作成しました！必要に応じて調整し、「☁️ 共有保存」を押してください。");
+  alert("1か月分の献立を作成しました！\n買い出しする週（第1週〜第6週）を選んで「買い物リストを作成」を押してください。");
 }
 
-function buildShoppingFromMenu() {
+function buildShoppingFromSelectedWeek() {
   const ym = document.getElementById("menuMonth").value;
   const monthData = state.menus[ym] || {};
+  const weeks = getMonthWeeks(ym);
+  const targetWeek = weeks[selectedWeekIndex];
+  if (!targetWeek) return;
+
   const map = new Map();
 
-  Object.values(monthData).forEach(day => {
+  targetWeek.days.forEach(dayInfo => {
+    const day = monthData[dayInfo.dateStr];
+    if (!day) return;
     [day.main, day.side].forEach(rid => {
       if (!rid) return;
       const r = state.recipes.find(x => x.id === rid);
@@ -1005,6 +1164,7 @@ function buildShoppingFromMenu() {
     category: item.category,
     checked: false
   }));
+  state.shoppingLabel = `対象：${ym} ${targetWeek.shortLabel}（${targetWeek.rangeText}）の1週間分`;
 
   saveLocal();
   switchTab("shopping");
@@ -1012,10 +1172,14 @@ function buildShoppingFromMenu() {
 
 function renderShopping() {
   const container = document.getElementById("shoppingList");
+  const scopeEl = document.getElementById("shoppingScopeLabel");
+  if (scopeEl) {
+    scopeEl.textContent = state.shoppingLabel || "";
+  }
   container.innerHTML = "";
 
   if (!state.shopping || state.shopping.length === 0) {
-    container.innerHTML = `<div class="card" style="text-align:center; color:var(--sub);">買い物リストは空です。「📅 献立」の「🛒 買い物作成」から自動集計できます。</div>`;
+    container.innerHTML = `<div class="card" style="text-align:center; color:var(--sub);">買い物リストは空です。「📅 献立」で買い出しする週を選んで「買い物リストを作成」を押してください。</div>`;
     return;
   }
 
