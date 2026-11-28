@@ -427,7 +427,7 @@
         </div>
         <p class="hint" id="shoppingScopeLabel" style="margin-top:0;margin-bottom:10px;"></p>
         <div class="search-row">
-          <select id="customShopKind" style="max-width:190px;"></select>
+          <select id="customShopKind" style="max-width:200px;"></select>
           <input type="text" id="customShopInput" placeholder="追加の買い物アイテムを入力..." style="flex:1;min-width:160px;" />
           <button type="button" class="btn-primary" id="btnAddCustomShop">追加</button>
         </div>
@@ -542,12 +542,12 @@
   </nav>
 
   <script>
-    const STORAGE_KEY = 'uchino_recipe_app_state_v5';
+    const STORAGE_KEY = 'uchino_recipe_app_state_v6';
     const DEFAULT_SHARE_KEY = 'uchino-recipe-1203';
     const WEEKS = [1, 2, 3, 4];
     const DAYS = ['月', '火', '水', '木', '金', '土', '日'];
 
-    // 買い物リストの区分順（指定順）
+    // 買い物リストの区分順（その他＝食材、調味料＝調味料・油・だしなど）
     const SHOP_KINDS = [
       '果物',
       '野菜',
@@ -558,7 +558,8 @@
       '卵',
       '牛乳などの乳製品',
       '冷凍',
-      'その他'
+      'その他',
+      '調味料'
     ];
 
     // 数量ドロップダウン（分数・よく使う数字・カスタム）
@@ -589,8 +590,8 @@
           ingredients: [
             { group: '', kind: '肉', name: '鶏もも肉', amount: '300', customAmount: '', unit: 'g' },
             { group: 'A', kind: '野菜', name: '長ねぎ', amount: '1/2', customAmount: '', unit: '本' },
-            { group: 'A', kind: 'その他', name: 'ごま油', amount: '1', customAmount: '', unit: '大さじ' },
-            { group: 'A', kind: 'その他', name: '鶏がらスープの素', amount: '1', customAmount: '', unit: '小さじ' }
+            { group: 'A', kind: '調味料', name: 'ごま油', amount: '1', customAmount: '', unit: '大さじ' },
+            { group: 'A', kind: '調味料', name: '鶏がらスープの素', amount: '1', customAmount: '', unit: '小さじ' }
           ],
           steps: '1. 鶏もも肉にAをかけ、電子レンジ（600W）で約5〜6分加熱する。',
           memo: '',
@@ -603,8 +604,8 @@
           ingredients: [
             { group: '', kind: '肉', name: '豚こま切れ肉', amount: '250', customAmount: '', unit: 'g' },
             { group: '', kind: '野菜', name: 'キャベツ', amount: '1/4', customAmount: '', unit: '玉' },
-            { group: '〇', kind: 'その他', name: '味噌', amount: '1', customAmount: '', unit: '大さじ' },
-            { group: '', kind: '牛乳などの乳製品', name: 'バター', amount: '10', customAmount: '', unit: 'g' }
+            { group: '〇', kind: '調味料', name: '味噌', amount: '1', customAmount: '', unit: '大さじ' },
+            { group: '', kind: '調味料', name: 'バター', amount: '10', customAmount: '', unit: 'g' }
           ],
           steps: '1. 豚肉とキャベツを炒め、味噌とバターを絡める。',
           memo: '',
@@ -625,14 +626,15 @@
         },
         {
           id: 'rec_004',
-          title: 'ブロッコリーとソーセージの炒め物',
+          title: '梅と板こんにゃくの炒め煮',
           category: '副菜',
           ingredients: [
-            { group: '', kind: '野菜', name: 'ブロッコリー', amount: '1/2', customAmount: '', unit: '株' },
-            { group: '', kind: 'ソーセージ類', name: 'ウインナーソーセージ', amount: '4', customAmount: '', unit: '本' },
-            { group: '', kind: '野菜', name: 'にんにく', amount: '1/2', customAmount: '', unit: '片' }
+            { group: '', kind: 'その他', name: '板こんにゃく', amount: '1', customAmount: '', unit: '枚' },
+            { group: '', kind: 'その他', name: '梅干し', amount: '2', customAmount: '', unit: '個' },
+            { group: '', kind: '調味料', name: '醤油', amount: '1', customAmount: '', unit: '大さじ' },
+            { group: '', kind: '調味料', name: '水', amount: '100', customAmount: '', unit: 'ml' }
           ],
-          steps: '1. ブロッコリーとソーセージをにんにくと炒める。',
+          steps: '1. 板こんにゃくをちぎり、梅干し・醤油・水と炒め煮にする。',
           memo: '',
           url: ''
         }
@@ -652,18 +654,24 @@
 
     function guessShopKind(name, rawKind) {
       if (rawKind && SHOP_KINDS.includes(rawKind)) return rawKind;
-      // 過去データの互換マッピング
-      if (rawKind === '調味料・その他') return 'その他';
       const n = String(name || '');
+
+      // 調味料を優先判定（水・醤油・バター・みりん・酒・味噌・油・だし・塩・砂糖・酢など）
+      if (/醤油|しょうゆ|みりん|酒|味噌|みそ|塩|砂糖|酢|油|オイル|だし|出汁|スープの素|コンソメ|めんつゆ|つゆ|マヨネーズ|ケチャップ|ソース|わさび|からし|マスタード|こしょう|コショウ|胡椒|水|湯|バター/.test(n)) {
+        return '調味料';
+      }
       if (/冷凍/.test(n)) return '冷凍';
       if (/りんご|バナナ|みかん|いちご|ぶどう|桃|梨|キウイ|レモン|果物|フルーツ/.test(n)) return '果物';
       if (/豆腐|納豆|厚揚げ|油揚げ|がんも/.test(n)) return '豆腐や納豆';
       if (/ソーセージ|ウインナー|ハム|ベーコン/.test(n)) return 'ソーセージ類';
       if (/卵|たまご|玉子/.test(n)) return '卵';
-      if (/牛乳|ミルク|ヨーグルト|チーズ|バター|生クリーム|乳製品/.test(n)) return '牛乳などの乳製品';
+      if (/牛乳|ミルク|ヨーグルト|チーズ|生クリーム|乳製品/.test(n)) return '牛乳などの乳製品';
       if (/肉|豚|鶏|牛|ひき肉|ミンチ/.test(n)) return '肉';
-      if (/魚|さば|鯖|鮭|サーモン|いわし|あじ|ぶり|鯛|えび|いか|たこ|缶詰/.test(n)) return '魚';
+      if (/魚|さば|鯖|鮭|サーモン|いわし|あじ|ぶり|鯛|えび|いか|たこ/.test(n)) return '魚';
       if (/ねぎ|葱|キャベツ|トマト|ブロッコリー|にんにく|玉ねぎ|人参|にんじん|じゃがいも|大根|ほうれん草|ピーマン|レタス|きのこ|しめじ|えのき|野菜/.test(n)) return '野菜';
+
+      // 旧「調味料・その他」は調味料寄りのもの以外を「その他（梅干し・板こんにゃく等の食材）」へ
+      if (rawKind === '調味料・その他') return 'その他';
       return 'その他';
     }
 
@@ -801,7 +809,6 @@
       return `${frac.num}/${frac.den}`;
     }
 
-    // 数量・カスタム・単位から集計用情報を抽出
     function extractQuantityInfo(ing) {
       const rawAmount = ing.amount !== undefined ? String(ing.amount).trim() : '';
       const rawCustom = ing.customAmount !== undefined ? String(ing.customAmount).trim() : '';
@@ -811,7 +818,6 @@
         if (!rawCustom) {
           return { kind: 'text', text: rawUnit ? rawUnit : '', unit: rawUnit };
         }
-        // カスタム欄に「300g」や「1/2」のように入っている場合もなるべく解析
         const match = rawCustom.match(/^(\d+\/\d+|\d+(?:\.\d+)?)\s*(.*)$/);
         if (match) {
           const frac = parseNumberTokenToFraction(match[1]);
@@ -833,7 +839,6 @@
         return { kind: 'qty', frac, unit: unitLabel };
       }
 
-      // 「適量」「少々」などの文字列数量
       const combinedText = `${rawAmount}${rawUnit}${rawCustom ? `（${rawCustom}）` : ''}`;
       return { kind: 'text', text: combinedText, unit: rawUnit };
     }
@@ -981,7 +986,6 @@
         (u) => `<option value="${escapeAttr(u)}" ${u === unitVal ? 'selected' : ''}>${u || '単位'}</option>`
       ).join('');
 
-      // 並び順：グループ(－/〇/A) -> 区分 -> 材料名 -> 数量 -> カスタム -> 単位 -> 削除
       div.innerHTML = `
         <select class="ing-group" title="グループ接頭辞">
           <option value="" ${groupVal === '' ? 'selected' : ''}>－</option>
@@ -1096,7 +1100,6 @@
       alert('第1週〜第4週（1か月分）の献立を作成しました！');
     }
 
-    // 「選んだ1週間分（activeWeek）」だけを買い物リストへ反映
     function reflectActiveWeekToShopping() {
       const keys = DAYS.map((d) => getMealKey(activeWeek, d));
       const hasAny = keys.some((k) => {
@@ -1129,7 +1132,6 @@
         scopeEl.textContent = '献立タブで週を選び、「🛒 第〇週を買い物リストへ反映」を押すと1週間分の材料が合算表示されます。';
       }
 
-      // 区分ごとの材料集計マップ: kind -> name -> { name, qtyByUnit: Map(unit -> frac), extras: Set(text) }
       const kindMap = {};
       SHOP_KINDS.forEach((k) => {
         kindMap[k] = new Map();
