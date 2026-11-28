@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>うちのレシピ＆献立</title>
+<style>
+  :root {
+    --primary: #e06d53;
+    --primary-dark: #c8563d;
+    --bg: #faf7f5;
+    --card: #ffffff;
+    --text: #2c2523;
+    --sub: #6e6562;
+    --border: #e6deda;
+    --sat-bg: #eef5ff;
+    --sat-text: #1d5bbf;
+    --sun-bg: #fff0f0;
+    --sun-text: #c92a2a;
+    --ok: #2b8a3e;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 17px;
+    line-height: 1.5;
+    padding-bottom: 84px;
+  }
+  .hidden { display: none !important; }
+
+  #pinScreen {
+    position: fixed; inset: 0; background: var(--bg); z-index: 9999;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .pin-box {
+    background: var(--card); padding: 32px 24px; border-radius: 20px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08); width: 100%; max-width: 360px; text-align: center;
+  }
+  .pin-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+  .pin-desc { font-size: 15px; color: var(--sub); margin-bottom: 20px; }
+  .pin-input {
+    width: 100%; font-size: 28px; text-align: center; letter-spacing: 0.3em;
+    padding: 12px; border: 2px solid var(--border); border-radius: 12px; margin-bottom: 16px;
+  }
+
+  header {
+    position: sticky; top: 0; z-index: 100; background: var(--primary); color: #fff;
+    padding: 12px 16px; display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  header h1 { margin: 0; font-size: 20px; font-weight: 700; }
+  .sync-bar { display: flex; align-items: center; gap: 8px; }
+  .btn-sync {
+    background: #fff; color: var(--primary-dark); border: none; border-radius: 999px;
+    padding: 8px 14px; font-size: 15px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  }
+  .btn-sync:active { transform: scale(0.97); }
+  .status-banner {
+    background: #fff3cd; color: #664d03; padding: 8px 16px; font-size: 14px;
+    border-bottom: 1px solid #ffe69c; display: flex; justify-content: space-between; align-items: center;
+  }
+  .status-banner.ok { background: #d1e7dd; color: #0f5132; border-color: #badbcc; }
+
+  main { max-width: 720px; margin: 0 auto; padding: 16px; }
+
+  button, select, input, textarea { font-family: inherit; font-size: 17px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 12px 18px; border-radius: 12px; border: none; font-weight: 700;
+    cursor: pointer; background: var(--primary); color: #fff; min-height: 48px;
+  }
+  .btn:active { opacity: 0.85; }
+  .btn-sub { background: #ede6e3; color: var(--text); }
+  .btn-ok { background: var(--ok); color: #fff; }
+  .btn-sm { padding: 8px 12px; font-size: 15px; min-height: 40px; border-radius: 10px; }
+  .btn-block { width: 100%; }
+
+  input[type="text"], input[type="number"], input[type="url"], select, textarea {
+    width: 100%; padding: 12px; border: 1.5px solid var(--border); border-radius: 12px;
+    background: #fff; color: var(--text);
+  }
+
+  .card {
+    background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 14px;
+    border: 1px solid var(--border); box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+  }
+
+  .search-row { display: flex; gap: 8px; margin-bottom: 12px; }
+  .filter-chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 10px; }
+  .chip {
+    white-space: nowrap; padding: 8px 14px; border-radius: 999px; border: 1.5px solid var(--border);
+    background: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+  }
+  .chip.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .recipe-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 14px; background: #fff; border-radius: 14px; border: 1px solid var(--border);
+    margin-bottom: 10px; cursor: pointer;
+  }
+  .recipe-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .recipe-meta { font-size: 14px; color: var(--sub); display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge {
+    background: #f3ece9; color: #5c4d47; padding: 2px 8px; border-radius: 6px; font-size: 13px; font-weight: 600;
+  }
+
+  .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .ing-list { list-style: none; padding: 0; margin: 0; }
+  .ing-list li {
+    display: flex; justify-content: space-between; gap: 8px; padding: 10px 4px;
+    border-bottom: 1px dashed var(--border); font-size: 17px;
+  }
+  .ing-prefix-badge {
+    display: inline-block; min-width: 24px; text-align: center;
+    background: #fff0ec; color: var(--primary-dark); border: 1px solid #f2c2b7;
+    border-radius: 6px; padding: 0 6px; margin-right: 6px; font-weight: 700; font-size: 15px;
+  }
+  .memo-box {
+    background: #fffaf0; border: 1px solid #f3dfb0; border-radius: 12px;
+    padding: 12px 14px; margin-bottom: 16px; white-space: pre-wrap; font-size: 16px;
+  }
+  .ref-link {
+    display: inline-block; margin-top: 8px; color: var(--primary-dark);
+    font-weight: 700; word-break: break-all;
+  }
+  .step-text { white-space: pre-wrap; font-size: 17px; line-height: 1.7; }
+
+  .menu-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; align-items: center; }
+  .day-card {
+    background: #fff; border-radius: 14px; padding: 12px 14px; margin-bottom: 10px;
+    border: 1.5px solid var(--border);
+  }
+  .day-card.sat { background: var(--sat-bg); border-color: #c5dcff; }
+  .day-card.sun { background: var(--sun-bg); border-color: #ffc9c9; }
+  .day-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-weight: 700; font-size: 17px; margin-bottom: 8px;
+  }
+  .day-card.sat .day-head { color: var(--sat-text); }
+  .day-card.sun .day-head { color: var(--sun-text); }
+  .meal-row { display: flex; align-items: center; gap: 8px; margin-top: 6px; }
+  .meal-tag {
+    font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+    background: #eee; min-width: 44px; text-align: center;
+  }
+  .meal-tag.main { background: #ffe3dc; color: #b53d24; }
+  .meal-tag.side { background: #e2f3e8; color: #1e6b38; }
+
+  .cat-block { margin-bottom: 16px; }
+  .cat-title {
+    font-size: 17px; font-weight: 700; background: #ede4e0; padding: 8px 12px;
+    border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between;
+  }
+  .shop-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    background: #fff; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .shop-item.checked { opacity: 0.5; text-decoration: line-through; background: #f5f5f5; }
+  .shop-check { width: 24px; height: 24px; accent-color: var(--primary); flex-shrink: 0; }
+  .shop-name { flex: 1; font-size: 18px; font-weight: 600; }
+  .shop-qty { font-size: 16px; color: var(--sub); font-weight: 700; }
+
+  nav.bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: #fff;
+    border-top: 1px solid var(--border); display: flex; z-index: 100;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .nav-btn {
+    flex: 1; border: none; background: none; padding: 10px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--sub); font-size: 13px; font-weight: 700; cursor: pointer;
+  }
+  .nav-btn.active { color: var(--primary); }
+  .nav-icon { font-size: 22px; }
+
+  .modal-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 500;
+    display: flex; align-items: flex-end; justify-content: center;
+  }
+  .modal-sheet {
+    background: #fff; width: 100%; max-width: 720px; max-height: 90vh;
+    border-radius: 20px 20px 0 0; padding: 20px; overflow-y: auto;
+  }
+  /* 食材行：左端に〇やAを入れる小さな枠を追加し、既存の並び順を維持 */
+  .ing-row {
+    display: grid;
+    grid-template-columns: 52px 2fr 1fr 1.2fr 1.4fr auto;
+    gap: 4px;
+    margin-bottom: 6px;
+    align-items: center;
+  }
+</style>
+</head>
+<body>
+
+<div id="pinScreen">
+  <div class="pin-box">
+    <div class="pin-title">🍳 うちのレシピ共有</div>
+    <div class="pin-desc">4桁のPINコードを入力してください</div>
+    <input type="tel" id="pinInput" class="pin-input" maxlength="4" placeholder="••••" inputmode="numeric">
+    <button class="btn btn-block" onclick="checkPin()">ロック解除</button>
+    <p id="pinError" style="color:#c92a2a; font-size:15px; margin-top:10px;" class="hidden">PINコードが違います</p>
+  </div>
+</div>
+
+<header>
+  <h1>🍳 うちのレシピ</h1>
+  <div class="sync-bar">
+    <button class="btn-sync" onclick="loadFromCloud(true)" title="パートナーが保存した最新データを読み込み">🔄 最新読込</button>
+    <button class="btn-sync" onclick="saveToCloud()" title="現在の献立・買い物リストをクラウドに保存して共有">☁️ 共有保存</button>
+  </div>
+</header>
+<div id="syncStatus" class="status-banner">
+  <span id="syncStatusText">未同期（ローカルデータ表示中）</span>
+  <span id="recipeCountBadge" style="font-weight:700;">0品</span>
+</div>
+
+<main>
+  <section id="view-recipes">
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="料理名・食材で検索..." oninput="renderRecipes()">
+      <button class="btn btn-sm" onclick="openRecipeForm()">＋追加</button>
+    </div>
+    <div class="filter-chips" id="typeFilters">
+      <button class="chip active" data-type="ALL" onclick="setTypeFilter('ALL', this)">すべて</button>
+      <button class="chip" data-type="主菜" onclick="setTypeFilter('主菜', this)">主菜</button>
+      <button class="chip" data-type="副菜" onclick="setTypeFilter('副菜', this)">副菜</button>
+      <button class="chip" data-type="汁物" onclick="setTypeFilter('汁物', this)">汁物</button>
+      <button class="chip" data-type="その他" onclick="setTypeFilter('その他', this)">その他</button>
+    </div>
+    <div id="recipeList"></div>
+  </section>
+
+  <section id="view-detail" class="hidden">
+    <div class="detail-header">
+      <button class="btn btn-sub btn-sm" onclick="switchTab('recipes')">← 一覧へ戻る</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-sub btn-sm" id="btnEditRecipe">編集</button>
+        <button class="btn btn-sub btn-sm" style="color:#c92a2a;" id="btnDeleteRecipe">削除</button>
+      </div>
+    </div>
+    <div class="card" id="detailContent"></div>
+  </section>
+
+  <section id="view-menu" class="hidden">
+    <div class="card">
+      <div style="font-weight:700; margin-bottom:10px; font-size:18px;">📅 献立プラン作成</div>
+      <div class="menu-controls">
+        <input type="month" id="menuMonth" style="flex:1; min-width:150px;" onchange="renderMenu()">
+        <button class="btn btn-sm" onclick="autoGenerateMenu()">✨ 自動作成</button>
+        <button class="btn btn-ok btn-sm" onclick="buildShoppingFromMenu()">🛒 買い物作成</button>
+      </div>
+      <div style="font-size:14px; color:var(--sub);">
+        ※献立を変更したら右上の「☁️ 共有保存」を押すとパートナーの画面にも反映されます。
+      </div>
+    </div>
+    <div id="menuList"></div>
+  </section>
+
+  <section id="view-shopping" class="hidden">
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span style="font-weight:700; font-size:18px;">🛒 買い物リスト</span>
+        <button class="btn btn-sub btn-sm" onclick="clearCheckedShopping()">チェック済みを消す</button>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="extraShopName" placeholder="追加する品物（例：ティッシュ）" style="flex:2;">
+        <select id="extraShopCat" style="flex:1;"></select>
+        <button class="btn btn-sm" onclick="addExtraShopping()">追加</button>
+      </div>
+    </div>
+    <div id="shoppingList"></div>
+  </section>
+
+  <section id="view-settings" class="hidden">
+    <div class="card">
+      <div style="font-weight:700; font-size:18px; margin-bottom:8px;">☁️ クラウド共有設定（GAS連携）</div>
+      <p style="font-size:15px; color:var(--sub); margin-top:0;">
+        Google Apps ScriptのウェブアプリURLを設定すると、「共有保存」「最新読込」でパートナーとリアルタイムにデータを共有できます。
+      </p>
+      <label style="font-size:15px; font-weight:700;">GAS ウェブアプリURL</label>
+      <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." style="margin:6px 0 12px;">
+      <label style="font-size:15px; font-weight:700;">共有合言葉（SHARE_KEY）</label>
+      <input type="text" id="shareKeyInput" placeholder="uchino-recipe-1203" style="margin:6px 0 12px;">
+      <button class="btn btn-block" onclick="saveSettings()">設定を保存して接続テスト</button>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700; font-size:18px; margin-bottom:8px;">📂 レシピJSONの読み込み・書き出し</div>
+      <p style="font-size:15px; color:var(--sub); margin-top:0;">
+        お手元のレシピJSONファイルを読み込むと、クラウドにも保存してパートナーと共有できます。
+      </p>
+      <input type="file" id="jsonFileInput" accept=".json,application/json" style="margin-bottom:12px;" onchange="importJsonFile(event)">
+      <button class="btn btn-sub btn-block" onclick="exportJsonFile()">現在の全データをJSONでダウンロード</button>
+    </div>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-recipes" onclick="switchTab('recipes')">
+    <span class="nav-icon">📖</span><span>レシピ</span>
+  </button>
+  <button class="nav-btn" id="nav-menu" onclick="switchTab('menu')">
+    <span class="nav-icon">📅</span><span>献立</span>
+  </button>
+  <button class="nav-btn" id="nav-shopping" onclick="switchTab('shopping')">
+    <span class="nav-icon">🛒</span><span>買い物</span>
+  </button>
+  <button class="nav-btn" id="nav-settings" onclick="switchTab('settings')">
+    <span class="nav-icon">⚙️</span><span>設定・JSON</span>
+  </button>
+</nav>
+
+<div id="recipeModal" class="modal-bg hidden">
+  <div class="modal-sheet">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <strong style="font-size:20px;" id="modalTitle">レシピを追加</strong>
+      <button class="btn btn-sub btn-sm" onclick="closeRecipeForm()">閉じる</button>
+    </div>
+    <input type="hidden" id="editRecipeId">
+    <div style="margin-bottom:10px;">
+      <label style="font-weight:700;">料理名</label>
+      <input type="text" id="formTitle" placeholder="例：鶏の照り焼き">
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:10px;">
+      <div style="flex:1;">
+        <label style="font-weight:700;">区分</label>
+        <select id="formType">
+          <option value="主菜">主菜</option>
+          <option value="副菜">副菜</option>
+          <option value="汁物">汁物</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div style="flex:1;">
+        <label style="font-weight:700;">メイン食材</label>
+        <select id="formMainIng">
+          <option value="肉">肉</option>
+          <option value="魚">魚</option>
+          <option value="卵・大豆">卵・大豆</option>
+          <option value="野菜">野菜</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+    </div>
+
+    <div style="margin-bottom:10px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <label style="font-weight:700;">材料（買い物リスト連動）</label>
+        <button type="button" class="btn btn-sub btn-sm" onclick="addIngredientRow()">＋材料行</button>
+      </div>
+      <div id="formIngredients"></div>
+    </div>
+
+    <div style="margin-bottom:12px;">
+      <label style="font-weight:700;">作り方</label>
+      <textarea id="formSteps" rows="4" placeholder="手順を入力"></textarea>
+    </div>
+
+    <!-- 作り方欄の下：メモ欄 -->
+    <div style="margin-bottom:12px;">
+      <label style="font-weight:700;">メモ</label>
+      <textarea id="formMemo" rows="2" placeholder="作り置きやアレンジなどのメモ"></textarea>
+    </div>
+
+    <!-- 参考URL（レシピサイト）欄 -->
+    <div style="margin-bottom:16px;">
+      <label style="font-weight:700;">参考URL（レシピサイト）</label>
+      <input type="url" id="formReferenceUrl" placeholder="https://...">
+    </div>
+
+    <button class="btn btn-block" onclick="saveRecipeForm()">この内容で保存</button>
+  </div>
+</div>
+
+<div id="pickRecipeModal" class="modal-bg hidden">
+  <div class="modal-sheet">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <strong style="font-size:19px;" id="pickModalTitle">レシピを選択</strong>
+      <button class="btn btn-sub btn-sm" onclick="closePickModal()">閉じる</button>
+    </div>
+    <input type="text" id="pickSearch" placeholder="料理名で絞り込み..." oninput="renderPickList()" style="margin-bottom:10px;">
+    <button class="btn btn-sub btn-block btn-sm" style="margin-bottom:10px;" onclick="selectPickRecipe('')">（未設定・クリアにする）</button>
+    <div id="pickRecipeList"></div>
+  </div>
+</div>
+
+<script id="initial-recipe-data" type="application/json">
+[
+  {
+    "id": "r1",
+    "title": "鮭ときのこのバター醤油包み焼き",
+    "category": "主菜",
+    "mainIng": "魚",
+    "memo": "アルミホイルで包むと洗い物が減り、香りも閉じ込められる。",
+    "referenceUrl": "",
+    "ingredients": [
+      { "prefix": "〇", "name": "生鮭", "amount": 2, "amountText": "2", "unit": "切れ", "shopCategory": "魚" },
+      { "prefix": "〇", "name": "しめじ", "amount": 1, "amountText": "1", "unit": "パック", "shopCategory": "野菜" },
+      { "prefix": "〇", "name": "玉ねぎ", "amount": 0.5, "amountText": "1/2", "unit": "個", "shopCategory": "野菜" },
+      { "prefix": "A", "name": "バター", "amount": 20, "amountText": "20", "unit": "g", "shopCategory": "チーズ等" },
+      { "prefix": "A", "name": "醤油", "amount": 1, "amountText": "1", "unit": "大さじ", "shopCategory": "その他" }
+    ],
+    "steps": [
+      "アルミホイルにスライスした玉ねぎ、鮭、しめじをのせる。",
+      "バターと醤油をかけて包み、フライパンで10分ほど蒸し焼きにする。"
+    ]
+  }
+]
+</script>
+
+<script>
+const APP_PIN = "1203";
+const DEFAULT_GAS_URL = "https://script.google.com/macros/s/AKfycbwx07cFQa5TuPQCnwNv4DkVWLzJg9vM-07n_7i-K18_gZ1z1fV1d5w/exec";
+const DEFAULT_SHARE_KEY = "uchino-recipe-1203";
+
+const SHOPPING_CATEGORIES = [
+  "果実",
+  "野菜",
+  "魚",
+  "ソーセージ等",
+  "肉",
+  "卵",
+  "牛乳",
+  "こんにゃくなど",
+  "チーズ等",
+  "冷凍",
+  "その他"
+];
+
+const UNIT_OPTIONS = ["個", "本", "枚", "切れ", "パック", "袋", "束", "丁", "株", "缶", "かけ", "g", "ml", "大さじ", "小さじ", "適量", "少々"];
+
+let state = {
+  recipes: [],
+  menus: {},
+  shopping: [],
+  updatedAt: null
+};
+
+let currentTypeFilter = "ALL";
+let pickTarget = { dateStr: "", slot: "" };
+
+window.addEventListener("DOMContentLoaded", () => {
+  const catSel = document.getElementById("extraShopCat");
+  SHOPPING_CATEGORIES.forEach(c => {
+    const opt = document.createElement("option");
+    opt.value = c; opt.textContent = c;
+    catSel.appendChild(opt);
+  });
+
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  document.getElementById("menuMonth").value = ym;
+
+  const savedUrl = localStorage.getItem("uchino_gas_url") || DEFAULT_GAS_URL;
+  const savedKey = localStorage.getItem("uchino_share_key") || DEFAULT_SHARE_KEY;
+  document.getElementById("gasUrlInput").value = savedUrl;
+  document.getElementById("shareKeyInput").value = savedKey;
+
+  if (sessionStorage.getItem("uchino_unlocked") === "1") {
+    document.getElementById("pinScreen").classList.add("hidden");
+    initApp();
+  }
+
+  document.getElementById("pinInput").addEventListener("keyup", (e) => {
+    if (e.key === "Enter" || e.target.value.length === 4) checkPin();
+  });
+});
+
+function checkPin() {
+  const val = document.getElementById("pinInput").value.trim();
+  if (val === APP_PIN) {
+    sessionStorage.setItem("uchino_unlocked", "1");
+    document.getElementById("pinScreen").classList.add("hidden");
+    initApp();
+  } else {
+    document.getElementById("pinError").classList.remove("hidden");
+    document.getElementById("pinInput").value = "";
+  }
+}
+
+async function initApp() {
+  const localRaw = localStorage.getItem("uchino_app_state");
+  if (localRaw) {
+    try {
+      state = JSON.parse(localRaw);
+    } catch (e) {}
+  }
+  if (!state.recipes || state.recipes.length === 0) {
+    try {
+      const embedded = JSON.parse(document.getElementById("initial-recipe-data").textContent);
+      state.recipes = embedded.map((r, idx) => normalizeRecipe(r, idx));
+    } catch (e) {
+      state.recipes = [];
+    }
+  } else {
+    state.recipes = state.recipes.map((r, idx) => normalizeRecipe(r, idx));
+  }
+  renderAll();
+
+  const gasUrl = getGasUrl();
+  if (gasUrl) {
+    await loadFromCloud(false);
+  }
+}
+
+function saveLocal() {
+  localStorage.setItem("uchino_app_state", JSON.stringify(state));
+  document.getElementById("recipeCountBadge").textContent = `${state.recipes.length}品`;
+}
+
+function renderAll() {
+  document.getElementById("recipeCountBadge").textContent = `${state.recipes.length}品`;
+  renderRecipes();
+  renderMenu();
+  renderShopping();
+}
+
+function getGasUrl() {
+  return (document.getElementById("gasUrlInput").value || DEFAULT_GAS_URL).trim();
+}
+function getShareKey() {
+  return (document.getElementById("shareKeyInput").value || DEFAULT_SHARE_KEY).trim();
+}
+
+function setStatus(msg, isOk = false) {
+  const bar = document.getElementById("syncStatus");
+  const txt = document.getElementById("syncStatusText");
+  txt.textContent = msg;
+  if (isOk) bar.classList.add("ok");
+  else bar.classList.remove("ok");
+}
+
+async function loadFromCloud(manual = false) {
+  const url = getGasUrl();
+  const key = getShareKey();
+  if (!url) {
+    if (manual) alert("「⚙️ 設定・JSON」タブからGASのウェブアプリURLを設定してください。");
+    return;
+  }
+  setStatus("クラウドから最新データ取得中...");
+  try {
+    const res = await fetch(`${url}?key=${encodeURIComponent(key)}`);
+    const json = await res.json();
+    if (json.status === "ok") {
+      if (json.data) {
+        state = json.data;
+        state.recipes = Array.isArray(state.recipes) ? state.recipes.map((r, idx) => normalizeRecipe(r, idx)) : [];
+        state.updatedAt = json.updatedAt;
+        saveLocal();
+        renderAll();
+        setStatus(`最新同期済: ${json.updatedAt || ""}`, true);
+        if (manual) alert("パートナーの最新データを読み込みました！");
+      } else {
+        setStatus("クラウドにまだデータがありません（共有保存を押してください）");
+      }
+    } else {
+      setStatus(`同期エラー: ${json.message}`);
+      if (manual) alert("同期エラー: " + json.message);
+    }
+  } catch (err) {
+    setStatus("通信エラー（URLを確認してください）");
+    if (manual) alert("通信エラーが発生しました: " + err);
+  }
+}
+
+async function saveToCloud() {
+  const url = getGasUrl();
+  const key = getShareKey();
+  saveLocal();
+  if (!url) {
+    alert("GAS URLが未設定のため端末内にのみ保存しました。「⚙️ 設定・JSON」からGAS URLを設定するとパートナーと共有できます。");
+    return;
+  }
+  setStatus("クラウドへ共有保存中...");
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ key: key, data: state })
+    });
+    const json = await res.json();
+    if (json.status === "ok") {
+      state.updatedAt = json.updatedAt;
+      saveLocal();
+      setStatus(`共有保存完了: ${json.updatedAt}`, true);
+      alert("✅ クラウドに保存しました！パートナーがページを開く（または最新読込を押す）と反映されます。");
+    } else {
+      setStatus(`保存エラー: ${json.message}`);
+      alert("保存エラー: " + json.message);
+    }
+  } catch (err) {
+    setStatus("保存通信エラー");
+    alert("保存通信エラー: " + err);
+  }
+}
+
+function saveSettings() {
+  const url = getGasUrl();
+  const key = getShareKey();
+  localStorage.setItem("uchino_gas_url", url);
+  localStorage.setItem("uchino_share_key", key);
+  loadFromCloud(true);
+}
+
+function switchTab(tab) {
+  ["recipes", "detail", "menu", "shopping", "settings"].forEach(id => {
+    document.getElementById(`view-${id}`).classList.add("hidden");
+  });
+  document.getElementById(`view-${tab}`).classList.remove("hidden");
+
+  document.querySelectorAll(".nav-btn").forEach(b => b.classList.remove("active"));
+  const navBtn = document.getElementById(`nav-${tab === "detail" ? "recipes" : tab}`);
+  if (navBtn) navBtn.classList.add("active");
+
+  if (tab === "menu") renderMenu();
+  if (tab === "shopping") renderShopping();
+  window.scrollTo(0, 0);
+}
+
+function setTypeFilter(type, btn) {
+  currentTypeFilter = type;
+  document.querySelectorAll("#typeFilters .chip").forEach(c => c.classList.remove("active"));
+  btn.classList.add("active");
+  renderRecipes();
+}
+
+function renderRecipes() {
+  const q = document.getElementById("searchInput").value.trim().toLowerCase();
+  const list = document.getElementById("recipeList");
+  list.innerHTML = "";
+
+  const filtered = state.recipes.filter(r => {
+    const matchType = currentTypeFilter === "ALL" || (r.type || "主菜") === currentTypeFilter;
+    const ingStr = (r.ingredients || []).map(i => i.name).join(" ").toLowerCase();
+    const memoStr = (r.memo || "").toLowerCase();
+    const matchQ = !q || (r.title || "").toLowerCase().includes(q) || ingStr.includes(q) || memoStr.includes(q);
+    return matchType && matchQ;
+  });
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="card" style="text-align:center; color:var(--sub);">該当するレシピがありません</div>`;
+    return;
+  }
+
+  filtered.forEach(r => {
+    const div = document.createElement("div");
+    div.className = "recipe-item";
+    div.onclick = () => showRecipeDetail(r.id);
+    div.innerHTML = `
+      <div>
+        <div class="recipe-title">${escapeHtml(r.title)}</div>
+        <div class="recipe-meta">
+          <span class="badge">${escapeHtml(r.type || "主菜")}</span>
+          ${r.mainIng ? `<span class="badge">${escapeHtml(r.mainIng)}</span>` : ""}
+          ${r.memo ? `<span class="badge">メモあり</span>` : ""}
+          ${r.referenceUrl ? `<span class="badge">参考URL</span>` : ""}
+          <span>材料 ${(r.ingredients || []).length}点</span>
+        </div>
+      </div>
+      <span style="color:var(--sub); font-size:20px;">›</span>
+    `;
+    list.appendChild(div);
+  });
+}
+
+function formatAmount(ing) {
+  if (ing.amountText !== undefined && ing.amountText !== null && String(ing.amountText).trim() !== "") {
+    return String(ing.amountText);
+  }
+  if (ing.qty !== "" && ing.qty !== null && ing.qty !== undefined) {
+    return String(ing.qty);
+  }
+  return "";
+}
+
+function showRecipeDetail(id) {
+  const r = normalizeRecipe(state.recipes.find(x => x.id === id) || {}, 0);
+  if (!r.id) return;
+
+  // 元の材料順のまま、左端に〇やAなどの記号を表示
+  const ingsHtml = (r.ingredients || []).map(i => {
+    const amtStr = formatAmount(i);
+    const prefixBadge = i.prefix
+      ? `<span class="ing-prefix-badge">${escapeHtml(i.prefix)}</span>`
+      : "";
+    return `
+      <li>
+        <span>${prefixBadge}${escapeHtml(i.name)} <small style="color:var(--sub);">(${escapeHtml(i.category || "その他")})</small></span>
+        <strong>${escapeHtml(amtStr)}${escapeHtml(i.unit || "")}</strong>
+      </li>
+    `;
+  }).join("");
+
+  const memoHtml = r.memo
+    ? `<div style="font-weight:700; margin-bottom:6px; color:var(--primary-dark);">メモ</div><div class="memo-box">${escapeHtml(r.memo)}</div>`
+    : "";
+
+  const safeUrl = /^https?:\/\//i.test(r.referenceUrl || "") ? r.referenceUrl : "";
+  const refHtml = safeUrl
+    ? `<div style="margin-top:16px;"><div style="font-weight:700; color:var(--primary-dark);">参考URL</div><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer" class="ref-link">🔗 ${escapeHtml(safeUrl)}</a></div>`
+    : "";
+
+  document.getElementById("detailContent").innerHTML = `
+    <div style="margin-bottom:8px;">
+      <span class="badge">${escapeHtml(r.type || "主菜")}</span>
+      ${r.mainIng ? `<span class="badge">${escapeHtml(r.mainIng)}</span>` : ""}
+    </div>
+    <h2 style="margin:6px 0 16px; font-size:22px;">${escapeHtml(r.title)}</h2>
+    <div style="font-weight:700; margin-bottom:6px; color:var(--primary-dark);">材料</div>
+    <ul class="ing-list" style="margin-bottom:18px;">${ingsHtml || "<li>材料未登録</li>"}</ul>
+    <div style="font-weight:700; margin-bottom:6px; color:var(--primary-dark);">作り方</div>
+    <div class="step-text" style="margin-bottom:16px;">${escapeHtml(r.steps || "記載なし")}</div>
+    ${memoHtml}
+    ${refHtml}
+  `;
+
+  document.getElementById("btnEditRecipe").onclick = () => openRecipeForm(r);
+  document.getElementById("btnDeleteRecipe").onclick = () => {
+    if (confirm(`「${r.title}」を削除しますか？`)) {
+      state.recipes = state.recipes.filter(x => x.id !== r.id);
+      saveLocal();
+      switchTab("recipes");
+      renderRecipes();
+    }
+  };
+  switchTab("detail");
+}
+
+function openRecipeForm(recipe = null) {
+  const rec = recipe ? normalizeRecipe(recipe, 0) : null;
+  document.getElementById("recipeModal").classList.remove("hidden");
+  document.getElementById("modalTitle").textContent = rec ? "レシピを編集" : "レシピを追加";
+  document.getElementById("editRecipeId").value = rec ? rec.id : "";
+  document.getElementById("formTitle").value = rec ? rec.title : "";
+  document.getElementById("formType").value = rec ? (rec.type || "主菜") : "主菜";
+  document.getElementById("formMainIng").value = rec ? (rec.mainIng || "肉") : "肉";
+  document.getElementById("formSteps").value = rec ? (rec.steps || "") : "";
+  document.getElementById("formMemo").value = rec ? (rec.memo || "") : "";
+  document.getElementById("formReferenceUrl").value = rec ? (rec.referenceUrl || "") : "";
+
+  const container = document.getElementById("formIngredients");
+  container.innerHTML = "";
+  const ings = (rec && rec.ingredients && rec.ingredients.length > 0)
+    ? rec.ingredients
+    : [{ prefix: "", name: "", qty: 1, amountText: "1", unit: "個", category: "野菜" }];
+  ings.forEach(ing => addIngredientRow(ing));
+}
+
+function closeRecipeForm() {
+  document.getElementById("recipeModal").classList.add("hidden");
+}
+
+function addIngredientRow(ing = { prefix: "", name: "", qty: 1, amountText: "1", unit: "個", category: "野菜" }) {
+  const container = document.getElementById("formIngredients");
+  const row = document.createElement("div");
+  row.className = "ing-row";
+
+  const unitOpts = UNIT_OPTIONS.map(u => `<option value="${u}" ${ing.unit === u ? "selected" : ""}>${u}</option>`).join("");
+  const catOpts = SHOPPING_CATEGORIES.map(c => `<option value="${c}" ${ing.category === c ? "selected" : ""}>${c}</option>`).join("");
+  const amtVal = formatAmount(ing);
+
+  row.innerHTML = `
+    <input type="text" class="ing-prefix" placeholder="〇/A" value="${escapeHtml(ing.prefix || "")}" style="padding:8px 6px; text-align:center;">
+    <input type="text" class="ing-name" placeholder="食材名" value="${escapeHtml(ing.name || "")}" style="padding:8px;">
+    <input type="text" class="ing-qty" placeholder="量" value="${escapeHtml(amtVal)}" style="padding:8px;">
+    <select class="ing-unit" style="padding:8px;">${unitOpts}</select>
+    <select class="ing-cat" style="padding:8px;">${catOpts}</select>
+    <button type="button" class="btn btn-sub btn-sm" style="padding:6px 10px;" onclick="this.parentElement.remove()">×</button>
+  `;
+  container.appendChild(row);
+}
+
+function parseFractionOrNumber(text) {
+  const s = String(text ?? "").trim();
+  if (!s) return "";
+  if (/^\d+(\.\d+)?$/.test(s)) return parseFloat(s);
+  const fracMatch = s.match(/^(\d+)\s*\/\s*(\d+)$/);
+  if (fracMatch) {
+    const den = parseFloat(fracMatch[2]);
+    return den !== 0 ? Math.round((parseFloat(fracMatch[1]) / den) * 10000) / 10000 : "";
+  }
+  return "";
+}
+
+function saveRecipeForm() {
+  const title = document.getElementById("formTitle").value.trim();
+  if (!title) { alert("料理名を入力してください"); return; }
+
+  const id = document.getElementById("editRecipeId").value || ("r_" + Date.now());
+  const type = document.getElementById("formType").value;
+  const mainIng = document.getElementById("formMainIng").value;
+  const steps = document.getElementById("formSteps").value;
+  const memo = document.getElementById("formMemo").value.trim();
+  const referenceUrl = document.getElementById("formReferenceUrl").value.trim();
+
+  const ingredients = [];
+  document.querySelectorAll("#formIngredients > div").forEach(row => {
+    const name = row.querySelector(".ing-name").value.trim();
+    if (!name) return;
+    const prefix = row.querySelector(".ing-prefix").value.trim();
+    const qtyText = row.querySelector(".ing-qty").value.trim();
+    const parsedNum = parseFractionOrNumber(qtyText);
+
+    ingredients.push({
+      prefix,
+      name,
+      qty: parsedNum,
+      amount: parsedNum === "" ? null : parsedNum,
+      amountText: qtyText,
+      unit: row.querySelector(".ing-unit").value,
+      category: row.querySelector(".ing-cat").value
+    });
+  });
+
+  const newObj = { id, title, type, category: type, mainIng, memo, referenceUrl, ingredients, steps };
+  const idx = state.recipes.findIndex(x => x.id === id);
+  if (idx >= 0) state.recipes[idx] = newObj;
+  else state.recipes.unshift(newObj);
+
+  saveLocal();
+  closeRecipeForm();
+  renderRecipes();
+}
+
+function renderMenu() {
+  const ym = document.getElementById("menuMonth").value;
+  if (!ym) return;
+  const [y, m] = ym.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  const weekNames = ["日", "月", "火", "水", "木", "金", "土"];
+
+  if (!state.menus[ym]) state.menus[ym] = {};
+  const monthData = state.menus[ym];
+
+  const container = document.getElementById("menuList");
+  container.innerHTML = "";
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateObj = new Date(y, m - 1, d);
+    const dow = dateObj.getDay();
+    const dateStr = `${ym}-${String(d).padStart(2, "0")}`;
+    const dayPlan = monthData[dateStr] || { main: "", side: "", memo: "" };
+
+    const mainR = state.recipes.find(r => r.id === dayPlan.main);
+    const sideR = state.recipes.find(r => r.id === dayPlan.side);
+
+    const card = document.createElement("div");
+    card.className = "day-card" + (dow === 6 ? " sat" : dow === 0 ? " sun" : "");
+    card.innerHTML = `
+      <div class="day-head">
+        <span>${m}月${d}日（${weekNames[dow]}）</span>
+        <input type="text" placeholder="メモ（外食・残り物など）" value="${escapeHtml(dayPlan.memo || "")}"
+          style="width:55%; padding:6px 10px; font-size:14px;"
+          onchange="updateMenuMemo('${ym}', '${dateStr}', this.value)">
+      </div>
+      <div class="meal-row">
+        <span class="meal-tag main">主菜</span>
+        <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${mainR ? '700' : '400'};"
+          onclick="openPickModal('${dateStr}', 'main')">
+          ${mainR ? escapeHtml(mainR.title) : "＋ 主菜を選ぶ"}
+        </button>
+      </div>
+      <div class="meal-row">
+        <span class="meal-tag side">副菜</span>
+        <button class="btn btn-sub btn-sm" style="flex:1; justify-content:flex-start; font-weight:${sideR ? '700' : '400'};"
+          onclick="openPickModal('${dateStr}', 'side')">
+          ${sideR ? escapeHtml(sideR.title) : "＋ 副菜を選ぶ"}
+        </button>
+      </div>
+    `;
+    container.appendChild(card);
+  }
+}
+
+function updateMenuMemo(ym, dateStr, val) {
+  if (!state.menus[ym]) state.menus[ym] = {};
+  if (!state.menus[ym][dateStr]) state.menus[ym][dateStr] = { main: "", side: "", memo: "" };
+  state.menus[ym][dateStr].memo = val;
+  saveLocal();
+}
+
+function openPickModal(dateStr, slot) {
+  pickTarget = { dateStr, slot };
+  document.getElementById("pickModalTitle").textContent = `${dateStr} の${slot === "main" ? "主菜" : "副菜"}を選択`;
+  document.getElementById("pickSearch").value = "";
+  document.getElementById("pickRecipeModal").classList.remove("hidden");
+  renderPickList();
+}
+
+function closePickModal() {
+  document.getElementById("pickRecipeModal").classList.add("hidden");
+}
+
+function renderPickList() {
+  const q = document.getElementById("pickSearch").value.trim().toLowerCase();
+  const list = document.getElementById("pickRecipeList");
+  list.innerHTML = "";
+
+  const targetType = pickTarget.slot === "main" ? "主菜" : "副菜";
+  const sorted = [...state.recipes].sort((a, b) => {
+    const aMatch = (a.type || a.category) === targetType ? 0 : 1;
+    const bMatch = (b.type || b.category) === targetType ? 0 : 1;
+    return aMatch - bMatch;
+  }).filter(r => !q || r.title.toLowerCase().includes(q));
+
+  sorted.forEach(r => {
+    const btn = document.createElement("button");
+    btn.className = "btn btn-sub btn-block";
+    btn.style.cssText = "justify-content:space-between; margin-bottom:8px; text-align:left;";
+    btn.innerHTML = `<span>${escapeHtml(r.title)}</span><span class="badge">${escapeHtml(r.type || r.category || "")}</span>`;
+    btn.onclick = () => selectPickRecipe(r.id);
+    list.appendChild(btn);
+  });
+}
+
+function selectPickRecipe(recipeId) {
+  const { dateStr, slot } = pickTarget;
+  const ym = dateStr.slice(0, 7);
+  if (!state.menus[ym]) state.menus[ym] = {};
+  if (!state.menus[ym][dateStr]) state.menus[ym][dateStr] = { main: "", side: "", memo: "" };
+  state.menus[ym][dateStr][slot] = recipeId;
+  saveLocal();
+  closePickModal();
+  renderMenu();
+}
+
+function autoGenerateMenu() {
+  const ym = document.getElementById("menuMonth").value;
+  if (!ym) return;
+  const mains = state.recipes.filter(r => (r.type || r.category) === "主菜");
+  const sides = state.recipes.filter(r => (r.type || r.category) === "副菜");
+  if (mains.length === 0) {
+    alert("主菜のレシピが登録されていません。");
+    return;
+  }
+  if (!confirm(`${ym} の献立を自動作成しますか？（既存の選択は上書きされます）`)) return;
+
+  const [y, m] = ym.split("-").map(Number);
+  const daysInMonth = new Date(y, m, 0).getDate();
+  state.menus[ym] = {};
+
+  let lastMainId = "";
+  let lastMainIng = "";
+  let lastSideId = "";
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${ym}-${String(d).padStart(2, "0")}`;
+    let mainPool = mains.filter(r => r.id !== lastMainId && (!r.mainIng || r.mainIng !== lastMainIng));
+    if (mainPool.length === 0) mainPool = mains.filter(r => r.id !== lastMainId);
+    if (mainPool.length === 0) mainPool = mains;
+    const chosenMain = mainPool[Math.floor(Math.random() * mainPool.length)];
+    lastMainId = chosenMain.id;
+    lastMainIng = chosenMain.mainIng || "";
+
+    let chosenSideId = "";
+    if (sides.length > 0) {
+      let sidePool = sides.filter(r => r.id !== lastSideId);
+      if (sidePool.length === 0) sidePool = sides;
+      const chosenSide = sidePool[Math.floor(Math.random() * sidePool.length)];
+      chosenSideId = chosenSide.id;
+      lastSideId = chosenSide.id;
+    }
+
+    state.menus[ym][dateStr] = { main: chosenMain.id, side: chosenSideId, memo: "" };
+  }
+  saveLocal();
+  renderMenu();
+  alert("献立を自動作成しました！必要に応じて調整し、「☁️ 共有保存」を押してください。");
+}
+
+function buildShoppingFromMenu() {
+  const ym = document.getElementById("menuMonth").value;
+  const monthData = state.menus[ym] || {};
+  const map = new Map();
+
+  Object.values(monthData).forEach(day => {
+    [day.main, day.side].forEach(rid => {
+      if (!rid) return;
+      const r = state.recipes.find(x => x.id === rid);
+      if (!r || !r.ingredients) return;
+      r.ingredients.forEach(ing => {
+        const rawCat = ing.category || ing.shopCategory || "その他";
+        const cat = SHOPPING_CATEGORIES.includes(rawCat) ? rawCat : "その他";
+        const unit = ing.unit || "";
+        const key = `${ing.name}__${unit}__${cat}`;
+        const prev = map.get(key) || { name: ing.name, qty: 0, hasNum: false, unit, category: cat };
+        const numVal = typeof ing.qty === "number" ? ing.qty : parseFractionOrNumber(ing.amountText ?? ing.amount);
+        if (typeof numVal === "number" && !isNaN(numVal)) {
+          prev.qty = Math.round((prev.qty + numVal) * 100) / 100;
+          prev.hasNum = true;
+        }
+        map.set(key, prev);
+      });
+    });
+  });
+
+  state.shopping = Array.from(map.values()).map((item, idx) => ({
+    id: "s_" + Date.now() + "_" + idx,
+    name: item.name,
+    qty: item.hasNum ? item.qty : "",
+    unit: item.unit,
+    category: item.category,
+    checked: false
+  }));
+
+  saveLocal();
+  switchTab("shopping");
+}
+
+function renderShopping() {
+  const container = document.getElementById("shoppingList");
+  container.innerHTML = "";
+
+  if (!state.shopping || state.shopping.length === 0) {
+    container.innerHTML = `<div class="card" style="text-align:center; color:var(--sub);">買い物リストは空です。「📅 献立」の「🛒 買い物作成」から自動集計できます。</div>`;
+    return;
+  }
+
+  SHOPPING_CATEGORIES.forEach(cat => {
+    const items = state.shopping.filter(i => (i.category || "その他") === cat);
+    if (items.length === 0) return;
+
+    const block = document.createElement("div");
+    block.className = "cat-block";
+    block.innerHTML = `<div class="cat-title"><span>${cat}</span><span>${items.length}点</span></div>`;
+
+    items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "shop-item" + (item.checked ? " checked" : "");
+      row.onclick = () => toggleShoppingItem(item.id);
+      row.innerHTML = `
+        <input type="checkbox" class="shop-check" ${item.checked ? "checked" : ""} onclick="event.stopPropagation(); toggleShoppingItem('${item.id}')">
+        <span class="shop-name">${escapeHtml(item.name)}</span>
+        <span class="shop-qty">${item.qty !== "" ? item.qty : ""}${escapeHtml(item.unit || "")}</span>
+      `;
+      block.appendChild(row);
+    });
+    container.appendChild(block);
+  });
+}
+
+function toggleShoppingItem(id) {
+  const item = state.shopping.find(x => x.id === id);
+  if (item) {
+    item.checked = !item.checked;
+    saveLocal();
+    renderShopping();
+  }
+}
+
+function clearCheckedShopping() {
+  state.shopping = state.shopping.filter(x => !x.checked);
+  saveLocal();
+  renderShopping();
+}
+
+function addExtraShopping() {
+  const name = document.getElementById("extraShopName").value.trim();
+  const category = document.getElementById("extraShopCat").value;
+  if (!name) return;
+  state.shopping.push({
+    id: "s_" + Date.now(),
+    name,
+    qty: "",
+    unit: "",
+    category,
+    checked: false
+  });
+  document.getElementById("extraShopName").value = "";
+  saveLocal();
+  renderShopping();
+}
+
+function importJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (Array.isArray(parsed)) {
+        state.recipes = parsed.map((r, idx) => normalizeRecipe(r, idx));
+      } else if (parsed && Array.isArray(parsed.recipes)) {
+        state.recipes = parsed.recipes.map((r, idx) => normalizeRecipe(r, idx));
+        if (parsed.menus) state.menus = parsed.menus;
+        else if (parsed.monthlyPlans) state.menus = parsed.monthlyPlans;
+        if (parsed.shopping) state.shopping = parsed.shopping;
+      } else {
+        alert("JSONの形式を認識できませんでした。");
+        return;
+      }
+      saveLocal();
+      renderAll();
+      alert(`✅ ${state.recipes.length}件のレシピを読み込みました！\nパートナーにも反映させるには、右上の「☁️ 共有保存」を押してください。`);
+      switchTab("recipes");
+    } catch (err) {
+      alert("JSONファイルの読み込みに失敗しました: " + err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function normalizeRecipe(r, idx) {
+  const recType = r.type || r.category || "主菜";
+  return {
+    id: r.id || ("r_" + idx + "_" + Date.now()),
+    title: r.title || r.name || "無題のレシピ",
+    type: recType,
+    category: recType,
+    mainIng: r.mainIng || "",
+    memo: r.memo || "",
+    referenceUrl: r.referenceUrl || "",
+    ingredients: Array.isArray(r.ingredients) ? r.ingredients.map(i => {
+      const rawCat = i.category || i.shopCategory || "その他";
+      const cat = SHOPPING_CATEGORIES.includes(rawCat) ? rawCat : "その他";
+      const amtText = i.amountText !== undefined && i.amountText !== null
+        ? String(i.amountText)
+        : (i.qty !== undefined && i.qty !== null ? String(i.qty) : (i.amount !== undefined && i.amount !== null ? String(i.amount) : ""));
+      const numVal = typeof i.qty === "number" ? i.qty : (typeof i.amount === "number" ? i.amount : parseFractionOrNumber(amtText));
+      return {
+        prefix: i.prefix || "",
+        name: i.name || "",
+        qty: numVal,
+        amount: numVal === "" ? null : numVal,
+        amountText: amtText,
+        unit: i.unit || "",
+        category: cat,
+        shopCategory: cat
+      };
+    }) : [],
+    steps: Array.isArray(r.steps) ? r.steps.join("\n") : (r.steps || "")
+  };
+}
+
+function exportJsonFile() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `uchino-recipe-backup-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function escapeHtml(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+</script>
+</body>
+</html>
