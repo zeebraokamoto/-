@@ -645,6 +645,13 @@
       checkedShopping: {}
     };
 
+    function cloneSeed() {
+      if (typeof structuredClone === 'function') {
+        return structuredClone(SEED_DATA);
+      }
+      return JSON.parse(JSON.stringify(SEED_DATA));
+    }
+
     let state = loadLocalState();
     let activeCategory = 'すべて';
     let activeWeek = 1;
@@ -687,63 +694,67 @@
     function normalizeRecipes(list) {
       if (!Array.isArray(list)) return [];
       return list.map((r, idx) => ({
-        id: cleanStr(r.id) || `rec_${idx + 1}`,
-        title: cleanStr(r.title) || '無題のレシピ',
-        category: cleanStr(r.category) || '主菜',
-        ingredients: Array.isArray(r.ingredients)
+        id: cleanStr(r && r.id) || `rec_${idx + 1}`,
+        title: cleanStr(r && r.title) || '無題のレシピ',
+        category: cleanStr(r && r.category) || '主菜',
+        ingredients: Array.isArray(r && r.ingredients)
           ? r.ingredients.map((ing) => {
-              const name = cleanStr(ing.name);
-              const rawKind = cleanStr(ing.kind || ing.foodType || ing.category);
+              const name = cleanStr(ing && ing.name);
+              const rawKind = cleanStr(ing && (ing.kind || ing.foodType || ing.category));
               return {
-                group: cleanStr(ing.group),
+                group: cleanStr(ing && ing.group),
                 kind: guessShopKind(name, rawKind),
                 name,
-                amount: cleanStr(ing.amount),
-                customAmount: cleanStr(ing.customAmount),
-                unit: cleanStr(ing.unit)
+                amount: cleanStr(ing && ing.amount),
+                customAmount: cleanStr(ing && ing.customAmount),
+                unit: cleanStr(ing && ing.unit)
               };
             })
           : [],
-        steps: cleanStr(r.steps),
-        memo: cleanStr(r.memo),
-        url: cleanStr(r.url)
+        steps: cleanStr(r && r.steps),
+        memo: cleanStr(r && r.memo),
+        url: cleanStr(r && r.url)
       }));
     }
 
     function loadLocalState() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (!raw) return structuredClone(SEED_DATA);
+        if (!raw) return cloneSeed();
         const parsed = JSON.parse(raw);
-        const savedUrl = cleanStr(parsed.gasUrl);
+        const savedUrl = cleanStr(parsed && parsed.gasUrl);
         return {
           gasUrl: savedUrl || DEFAULT_GAS_URL,
-          shareKey: cleanStr(parsed.shareKey) || DEFAULT_SHARE_KEY,
-          updatedAt: cleanStr(parsed.updatedAt),
-          recipes: Array.isArray(parsed.recipes) && parsed.recipes.length > 0
+          shareKey: cleanStr(parsed && parsed.shareKey) || DEFAULT_SHARE_KEY,
+          updatedAt: cleanStr(parsed && parsed.updatedAt),
+          recipes: Array.isArray(parsed && parsed.recipes) && parsed.recipes.length > 0
             ? normalizeRecipes(parsed.recipes)
-            : structuredClone(SEED_DATA.recipes),
-          meals: parsed.meals && typeof parsed.meals === 'object' ? parsed.meals : {},
-          reflectedWeek: parsed.reflectedWeek || null,
-          reflectedMealKeys: Array.isArray(parsed.reflectedMealKeys) ? parsed.reflectedMealKeys : [],
-          customShopping: Array.isArray(parsed.customShopping)
+            : cloneSeed().recipes,
+          meals: parsed && parsed.meals && typeof parsed.meals === 'object' ? parsed.meals : {},
+          reflectedWeek: (parsed && parsed.reflectedWeek) || null,
+          reflectedMealKeys: Array.isArray(parsed && parsed.reflectedMealKeys) ? parsed.reflectedMealKeys : [],
+          customShopping: Array.isArray(parsed && parsed.customShopping)
             ? parsed.customShopping.map((c) => {
                 const cname = typeof c === 'string' ? cleanStr(c) : cleanStr(c && c.name);
                 const ckind = typeof c === 'string' ? '' : cleanStr(c && c.kind);
                 return { name: cname, kind: guessShopKind(cname, ckind) };
               }).filter((x) => x.name)
             : [],
-          checkedShopping: parsed.checkedShopping && typeof parsed.checkedShopping === 'object'
+          checkedShopping: parsed && parsed.checkedShopping && typeof parsed.checkedShopping === 'object'
             ? parsed.checkedShopping
             : {}
         };
       } catch (_) {
-        return structuredClone(SEED_DATA);
+        return cloneSeed();
       }
     }
 
     function saveLocalState() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (err) {
+        console.warn('localStorage保存エラー:', err);
+      }
       updateStatusBar();
     }
 
@@ -1335,18 +1346,27 @@
 
     function getCloudPayloadData() {
       return {
-        recipes: state.recipes,
-        meals: state.meals,
-        reflectedWeek: state.reflectedWeek,
-        reflectedMealKeys: state.reflectedMealKeys,
-        customShopping: state.customShopping,
-        checkedShopping: state.checkedShopping
+        recipes: normalizeRecipes(state.recipes),
+        meals: state.meals && typeof state.meals === 'object' ? state.meals : {},
+        reflectedWeek: state.reflectedWeek || null,
+        reflectedMealKeys: Array.isArray(state.reflectedMealKeys) ? state.reflectedMealKeys : [],
+        customShopping: Array.isArray(state.customShopping) ? state.customShopping : [],
+        checkedShopping: state.checkedShopping && typeof state.checkedShopping === 'object' ? state.checkedShopping : {}
       };
+    }
+
+    function renderAllViews() {
+      renderRecipes();
+      renderMeals();
+      renderShopping();
+      updateStatusBar();
     }
 
     function applyCloudPayloadData(payload, updatedAt) {
       if (!payload || typeof payload !== 'object') return;
-      if (Array.isArray(payload.recipes)) state.recipes = normalizeRecipes(payload.recipes);
+      if (Array.isArray(payload.recipes) && payload.recipes.length > 0) {
+        state.recipes = normalizeRecipes(payload.recipes);
+      }
       if (payload.meals && typeof payload.meals === 'object') state.meals = payload.meals;
       if (payload.reflectedWeek) state.reflectedWeek = payload.reflectedWeek;
       if (Array.isArray(payload.reflectedMealKeys)) state.reflectedMealKeys = payload.reflectedMealKeys;
@@ -1362,9 +1382,7 @@
       }
       if (updatedAt) state.updatedAt = cleanStr(updatedAt);
       saveLocalState();
-      renderRecipes();
-      renderMeals();
-      renderShopping();
+      renderAllViews();
     }
 
     async function loadFromCloud(showAlert = true) {
@@ -1389,7 +1407,7 @@
         } else {
           updateStatusBar('クラウドにデータがありません');
         }
-        if (showAlert) alert('パートナーの最新データを読み込みました！');
+        if (showAlert) alert(`最新データを読み込みました（${state.recipes.length}品）！`);
         return true;
       } catch (err) {
         updateStatusBar('読み込みエラー');
@@ -1407,11 +1425,22 @@
         return false;
       }
 
+      const payloadData = getCloudPayloadData();
+      if (!Array.isArray(payloadData.recipes) || payloadData.recipes.length === 0) {
+        if (showAlert) alert('レシピが0件のため共有保存を中止しました。');
+        return false;
+      }
+
       isSavingCloud = true;
       setSavingButtonsDisabled(true);
-      updateStatusBar('クラウドへ共有保存中…');
+      updateStatusBar(`クラウドへ共有保存中（${payloadData.recipes.length}品）…`);
 
       try {
+        const bodyText = JSON.stringify({
+          key,
+          data: payloadData
+        });
+
         await fetch(url, {
           method: 'POST',
           mode: 'no-cors',
@@ -1419,17 +1448,14 @@
           headers: {
             'Content-Type': 'text/plain;charset=utf-8'
           },
-          body: JSON.stringify({
-            key,
-            data: getCloudPayloadData()
-          })
+          body: bodyText
         });
 
         const nowText = new Date().toLocaleString('ja-JP');
         state.updatedAt = nowText;
         saveLocalState();
         if (showAlert) {
-          alert('共有保存リクエストを送信しました！');
+          alert(`共有保存リクエストを送信しました（${payloadData.recipes.length}品）。反映後に「最新読込」で件数をご確認ください。`);
         }
         return true;
       } catch (err) {
@@ -1620,15 +1646,13 @@
           const parsed = JSON.parse(String(reader.result || '{}'));
           if (Array.isArray(parsed)) {
             state.recipes = normalizeRecipes(parsed);
+            saveLocalState();
+            renderAllViews();
           } else if (parsed && Array.isArray(parsed.recipes)) {
             applyCloudPayloadData(parsed, state.updatedAt);
           } else {
             throw new Error('レシピ配列（recipes）が見つかりません');
           }
-          saveLocalState();
-          renderRecipes();
-          renderMeals();
-          renderShopping();
           alert(`JSONを読み込みました（${state.recipes.length}品）。クラウドへ反映するには「共有保存」を押してください。`);
         } catch (err) {
           alert(`JSON読み込みエラー: ${err && err.message ? err.message : err}`);
@@ -1666,10 +1690,7 @@
 
     initCustomShopKindOptions();
     syncSettingsInputs();
-    renderRecipes();
-    renderMeals();
-    renderShopping();
-    updateStatusBar();
+    renderAllViews();
     if (state.gasUrl) {
       loadFromCloud(false);
     }
